@@ -21,6 +21,9 @@ type Ctx struct {
 	// replyCapture 非空时，Ctx.Reply 只暂存响应，由请求回执中间件统一持久化
 	// 后再发送。这样 handler 自回包与 dispatch 统一回包不会重复。
 	replyCapture *ctxReplyCapture
+
+	// afterResponse 在响应帧真正写出后按顺序执行，用于“先回包、再推送”的协议顺序。
+	afterResponse []func()
 }
 
 // Key 命令键 "main/sub"。
@@ -43,6 +46,14 @@ func (c *Ctx) ArgInt(i int) (uint64, bool) {
 		return it.Num, true
 	}
 	return 0, false
+}
+
+// AfterResponse 注册响应发送后的回调。请求回执路径会先持久化并发送应答，
+// 再执行回调，确保技能树/背包推送不会抢在应答之前。
+func (c *Ctx) AfterResponse(fn func()) {
+	if c != nil && fn != nil {
+		c.afterResponse = append(c.afterResponse, fn)
+	}
 }
 
 // Reply 回一个 body（封装成响应信封发送）。
