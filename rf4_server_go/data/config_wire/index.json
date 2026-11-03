@@ -1,0 +1,51 @@
+{
+ "versions": [
+  "662ea7cba05450b6da0fee1e1f4bf92237843730",
+  "60079f48100e3f6aa1315c3943e3682c4be69507",
+  "4db62e4a468881950bf182bcc049e13072c4b73c",
+  "de676d719ae70bb619b050094b7ac10ee7c51bd4",
+  "7b30b5295d285b92a0e1ff6db8b631afc64c37b0",
+  "f97cf4bbe7baa002293c9e6e5c20c691fc1a3ec1",
+  "d00aece675c34614a4927a1cddbeb8d11d3a3704",
+  "e21cbd4578e23b18a1172309c6a4b2be13d218c8",
+  "5c64a1480e64d453c29e5d821468f8b8863098dd"
+ ],
+ "types": {
+  "1": {
+   "sha1": "662ea7cba05450b6da0fee1e1f4bf92237843730",
+   "bytes": 262144
+  },
+  "2": {
+   "sha1": "60079f48100e3f6aa1315c3943e3682c4be69507",
+   "bytes": 65536
+  },
+  "3": {
+   "sha1": "4db62e4a468881950bf182bcc049e13072c4b73c",
+   "bytes": 16384
+  },
+  "4": {
+   "sha1": "de676d719ae70bb619b050094b7ac10ee7c51bd4",
+   "bytes": 16384
+  },
+  "5": {
+   "sha1": "7b30b5295d285b92a0e1ff6db8b631afc64c37b0",
+   "bytes": 4096
+  },
+  "6": {
+   "sha1": "f97cf4bbe7baa002293c9e6e5c20c691fc1a3ec1",
+   "bytes": 131072
+  },
+  "7": {
+   "sha1": "d00aece675c34614a4927a1cddbeb8d11d3a3704",
+   "bytes": 65536
+  },
+  "8": {
+   "sha1": "e21cbd4578e23b18a1172309c6a4b2be13d218c8",
+   "bytes": 8192
+  },
+  "9": {
+   "sha1": "5c64a1480e64d453c29e5d821468f8b8863098dd",
+   "bytes": 256
+  }
+ }
+}

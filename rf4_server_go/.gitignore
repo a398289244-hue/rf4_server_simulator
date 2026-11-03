@@ -1,0 +1,21 @@
+# IDE
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Runtime
+logs/
+bin/
+dist/
+
+# Local backups and temporary captures
+projectFilesBackup*/
+*.bak*
+*.tmp
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
