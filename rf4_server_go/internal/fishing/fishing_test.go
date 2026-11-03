@@ -727,6 +727,32 @@ func TestStateArmResolveClear(t *testing.T) {
 	<-done
 }
 
+// TestStateOnlyArmsWhileBaitIsInWater 锁住本轮修复的核心规则：14/1、14/2 都不能出鱼，
+// 只有首条 14/7 之后能出；收线后旧定时器即使醒来也必须作废。
+func TestStateOnlyArmsWhileBaitIsInWater(t *testing.T) {
+	var st State
+	f := Fish{Key: "ruffe", Grams: 88, SetupGUID: "11111111111111111111111111111111"}
+	st.SetGear(realSampleGear)
+	if st.InWater(0) || st.ArmIfInWater(0, f) {
+		t.Fatal("只有 14/1 准备阶段时不该允许出鱼")
+	}
+	st.MarkThrown(realSampleGear)
+	if st.ArmIfInWater(0, f) {
+		t.Fatal("只有 14/2、钓组仍在飞行时不该允许出鱼")
+	}
+	seq, first := st.MarkInWater()
+	if !first || seq == 0 || !st.InWater(seq) {
+		t.Fatalf("首条 14/7 没把状态切成入水：seq=%d first=%v", seq, first)
+	}
+	if _, again := st.MarkInWater(); again {
+		t.Fatal("后续 14/7 不该重复启动出鱼任务")
+	}
+	st.LeaveWater()
+	if st.InWater(seq) || st.ArmIfInWater(seq, f) {
+		t.Fatal("收线后旧定时器仍能挂鱼")
+	}
+}
+
 // TestBiteDelayStaysInsideWindow 咬钩延迟必须落在给定的区间里（真服也不是定值，但不能离谱）
 func TestBiteDelayStaysInsideWindow(t *testing.T) {
 	rnd := rand.New(rand.NewSource(11))

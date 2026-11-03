@@ -170,15 +170,18 @@ func SetupBody(t *wire.Table, f Fish) (*wire.Obj, error) {
 	if err := o.SetValAt(21, wire.Args{Code: "27", Items: wire.RawItems(raws)}); err != nil {
 		return nil, err
 	}
-	// #22 还没填上的文本名：真服发的是 null(0xff)；#23 判鱼模型 guid；#24 null
+	// #22 还没填上的文本名：真服发的是 null(0xff)；#23 线末端鱼钩 guid；#24 null
 	if err := o.SetOptShortStrAt(22, "", false); err != nil {
 		return nil, err
 	}
-	model := f.ModelGUID
-	if model == "" {
-		model = f.SetupGUID
+	hook := f.HookGUID
+	if hook == "" {
+		hook = f.ModelGUID // 兼容旧测试/旧数据；实机会优先填真实鱼钩 GUID
 	}
-	if err := o.SetGUIDAt(23, model); err != nil {
+	if hook == "" {
+		hook = f.SetupGUID
+	}
+	if err := o.SetGUIDAt(23, hook); err != nil {
 		return nil, err
 	}
 	if err := o.SetValAt(24, wire.Null{}); err != nil {

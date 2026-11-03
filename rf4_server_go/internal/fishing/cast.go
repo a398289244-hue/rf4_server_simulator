@@ -56,6 +56,26 @@ func KeepGUIDs(plain []byte) (gear, fish string, ok bool) {
 	return gear, fish, true
 }
 
+// FishStatusCode 读取 14/12 的鱼实体状态（obj24#00）。这条请求的正文结构会随
+// 客户端版本变化，所以从参数树里取第一个 u32，不再写死字节偏移。
+func FishStatusCode(t *wire.Table, plain []byte) (uint32, bool) {
+	if t == nil || len(plain) <= 11 {
+		return 0, false
+	}
+	v, _, err := t.DecodeValue(plain, 11)
+	if err != nil {
+		return 0, false
+	}
+	var out uint32
+	found := false
+	wire.Walk(v, func(it wire.WalkItem) {
+		if !found && it.Kind == "u32" {
+			out, found = uint32(it.Num), true
+		}
+	})
+	return out, found
+}
+
 // isHexStr 整串是不是十六进制字符（GUID 读歪了通常是因为帧短了，这时别硬拼）
 func isHexStr(s string) bool {
 	if len(s) != 32 {
@@ -72,11 +92,18 @@ func isHexStr(s string) bool {
 // CastReply 回 14/1：obj158。
 //
 //	#00 钓具 GUID（客户端给什么回什么）  #01 允许抛距 = 10.0
-//	#02 参数 = 5.0                       #03 关联 GUID = 全零
+//	#02 参数 = 5.0                       #03 线末端鱼钩 GUID（没有时全零）
 //
 // 凭据：真服那条 54B（cmd/rf4dump -cmd 14/1），后两个 float 就是 10.0 和 5.0。
-// #03 那条真服是全零 GUID，字段表注释说客户端拿它做去重键，先照抄。
+// 旧抓包样本 #03 是全零，所以 CastReply 保留这个兼容入口；实机走 CastReplyWithHook，
+// 从当前账号 objects.elem 读取真实鱼钩 GUID。
 func CastReply(t *wire.Table, callID uint32, gearGUID string) ([]byte, error) {
+	return CastReplyWithHook(t, callID, gearGUID, "")
+}
+
+// CastReplyWithHook 和 CastReply 相同，但 #03 带当前线末端鱼钩实例 GUID。
+// 最新协议实现和客户端行为都表明：有钩时必须回真实 GUID，客户端后面会用它校验 14/14#23。
+func CastReplyWithHook(t *wire.Table, callID uint32, gearGUID, hookGUID string) ([]byte, error) {
 	o, err := t.NewObj(158)
 	if err != nil {
 		return nil, err
@@ -90,7 +117,7 @@ func CastReply(t *wire.Table, callID uint32, gearGUID string) ([]byte, error) {
 	if err := o.SetU32At(2, wire.F32Bits(5)); err != nil { // 还没查实，真服这条是 5.0
 		return nil, err
 	}
-	if err := o.SetGUIDAt(3, "00000000000000000000000000000000"); err != nil {
+	if err := o.SetGUIDAt(3, hookGUID); err != nil {
 		return nil, err
 	}
 	body, err := o.Encode()

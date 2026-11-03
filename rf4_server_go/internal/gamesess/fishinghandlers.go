@@ -1,11 +1,11 @@
 package gamesess
 
-// 钓鱼这一片的处理器：14/1 抛竿准备、14/2 抛出去、14/4 起鱼结算、14/5 留鱼。
+// 钓鱼这一片的处理器：14/1 抛竿准备、14/2 抛出去、14/7 水中状态、
+// 14/4 起鱼结算、14/5 留鱼、14/12 鱼实体状态。
 // 规矩和其它域一样：这层只读请求、叫 internal/fishing 去算、发出去、写一行能看懂的日志；
 // 出什么鱼、多重多长、帧怎么拼，一律不在这里。
 //
-// 14/7 14/8 14/11 是客户端上报搏鱼过程的单帧，在 oneway 名单里（客户端不等回话），
-// 所以不用挂处理器，serveRequest 会打「单向上报」那行日志。
+// 14/7、14/11、14/12 都是客户端单向上报，处理器只更新状态，绝不能回应答帧。
 
 import (
 	"context"
@@ -47,19 +47,22 @@ func castPrepare(s *Session, env wire.Envelope, plain []byte) {
 		sendBuilt(s, env, notHere(env), nil, "抛竿(14/1) 钓鱼服务没装", " 多半是没连上 MySQL")
 		return
 	}
-	frame, err := svc.CastPrepareFrame(env.CallID, gear)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	hook, hookErr := svc.MountedHookGUID(ctx, s.userOrGuest(), gear)
+	cancel()
+	if hookErr != nil {
+		s.log(">> 抛竿(14/1) 没读到线末端鱼钩：" + hookErr.Error())
+	}
+	frame, err := svc.CastPrepareFrameWithHook(env.CallID, gear, hook)
 	casts, bites, kept := s.fishingState.Stats()
 	sendBuilt(s, env, frame, err, "抛竿(14/1) 钓具="+short(gear),
 		" 累计 抛"+strconv.Itoa(casts)+" 咬"+strconv.Itoa(bites)+" 留"+strconv.Itoa(kept))
-	if err != nil {
-		return
-	}
-	s.scheduleBite("抛竿")
 }
 
 // castThrow 14/2：竿真的甩出去了（请求里带落点坐标和钓点名）。
 // 真服这条回的就是空 obj800（29B），没什么可算的，照抄形状。
 func castThrow(s *Session, env wire.Envelope, plain []byte) {
+	gear, _ := fishing.GearGUID(plain)
 	// 14/2 有时也带当前 level_*，读到了就顺手校正；主来源仍是 1/12。
 	if loc := mapworld.LevelFromRequest(s.srv.Deps.Table, plain); loc != "" {
 		s.setCurrentLocation(loc)
@@ -75,13 +78,30 @@ func castThrow(s *Session, env wire.Envelope, plain []byte) {
 		return
 	}
 	s.answered[env.CallID] = true
+	s.fishingState.MarkThrown(gear)
 	s.log(">> 抛出(14/2) 回 29B 空快照（真服这条也是空快照） cid=" +
-		strconv.FormatUint(uint64(env.CallID), 10))
+		strconv.FormatUint(uint64(env.CallID), 10) + "；等待首条 14/7 确认饵已入水")
 }
+
+// fishWaterTick 14/7：客户端只有在钓组已经落下并持续处于水中时才周期上报。
+// 首帧是“饵已入水”的可靠边界，后续帧只维持状态，不重复排定时器。
+func fishWaterTick(s *Session, _ wire.Envelope, _ []byte) {
+	seq, first := s.fishingState.MarkInWater()
+	if !first {
+		return
+	}
+	s.log(">> 饵已入水(14/7)，现在开始计算咬钩时间")
+	s.scheduleBite("饵入水", seq)
+}
+
+// fishHooked 14/11 是刺鱼/搏鱼状态上报；当前阶段只认账且保持单向静默。
+func fishHooked(_ *Session, _ wire.Envelope, _ []byte) {}
 
 // fishEnd 14/4：起鱼/收线。回 obj801，里面那个 obj307 是现取的档案（银币、技能点跟最新值）。
 // 这次要是钩着鱼，就把那条鱼的 GUID 放进 #10，并把「这根竿 + 它的零件」现在这份记录放进 #08。
 func fishEnd(s *Session, env wire.Envelope, plain []byte) {
+	// 先让这一竿所有尚未到点的出鱼任务作废；pending 仍保留给本次结算和后续 14/5。
+	s.fishingState.LeaveWater()
 	svc := s.srv.Deps.Fishing
 	if svc == nil {
 		sendBuilt(s, env, notHere(env), nil, "起鱼(14/4) 钓鱼服务没装", "")
@@ -111,6 +131,37 @@ func fishEnd(s *Session, env wire.Envelope, plain []byte) {
 	frame, err := svc.EndFrame(env.CallID, d, recs, guids)
 	sendBuilt(s, env, frame, err, "起鱼(14/4) 钩着="+hooked,
 		" 数据来自 "+src+" 装备记录 "+strconv.Itoa(len(recs))+" 件")
+}
+
+// fishLeft 14/12：客户端汇报刚才那条鱼实体是否被接受。这条是真服单向命令，
+// 以前回“没这条 RPC”会干扰客户端状态机；现在只记录/重推，不发任何应答。
+func fishLeft(s *Session, _ wire.Envelope, plain []byte) {
+	status, ok := fishing.FishStatusCode(s.srv.Deps.Table, plain)
+	if !ok {
+		s.log(">> 鱼状态(14/12) 请求读不懂，保持静默")
+		return
+	}
+	switch status {
+	case 3:
+		f, seq, attempt, retry := s.fishingState.PendingRetry()
+		if !retry {
+			s.log(">> 鱼状态(14/12) f0=3 客户端未接收判鱼推送；饵已离水或重试次数已用完")
+			return
+		}
+		s.log(">> 鱼状态(14/12) f0=3 客户端未接收判鱼推送，6秒后重推同一条鱼（第" +
+			strconv.Itoa(attempt) + "次）")
+		s.scheduleBiteRetry(f, seq, attempt)
+	case 5:
+		s.fishingState.LeaveWater()
+		s.fishingState.ClearPending()
+		s.log(">> 鱼状态(14/12) f0=5 鱼已离开，本竿停止出鱼")
+	case 6:
+		s.log(">> 鱼状态(14/12) f0=6 客户端已用新鱼替换旧鱼")
+	default:
+		s.fishingState.LeaveWater()
+		s.fishingState.ClearPending()
+		s.log(">> 鱼状态(14/12) f0=" + strconv.FormatUint(uint64(status), 10) + "，本竿停止出鱼")
+	}
 }
 
 // fishKeep 14/5：把鱼留进鱼护。拼鱼卡片 -> 回包 -> 写 keepnets/fish_records -> 推 4/22。
@@ -176,7 +227,7 @@ func fishKeep(s *Session, env wire.Envelope, plain []byte) {
 // scheduleBite 排一次咬钩：延迟到某个随机时刻，然后把 14/14 推出去。
 // 为什么是异步的：真服也不是抛完立刻咬钩（实测 4~16 秒不等），
 // 而且这段时间客户端还在发 14/8 上报搏鱼姿态，我们不能卡在帧循环里睡。
-func (s *Session) scheduleBite(reason string) {
+func (s *Session) scheduleBite(reason string, seq uint64) {
 	svc := s.srv.Deps.Fishing
 	if svc == nil {
 		return
@@ -203,6 +254,10 @@ func (s *Session) scheduleBite(reason string) {
 			return // 连接都关了，就别往断掉的 socket 上推了
 		case <-timer.C:
 		}
+		if !s.fishingState.InWater(seq) {
+			s.log(">> 咬钩 已取消：定时器到点时饵已经不在水中")
+			return
+		}
 		f, ok := p.Pick()
 		if !ok {
 			s.log(">> 咬钩 配不出鱼（static_species_weight / static_map_fish_roster 里没找到能用的），这次不派")
@@ -212,10 +267,25 @@ func (s *Session) scheduleBite(reason string) {
 		if gear == "" {
 			s.log(">> 咬钩 没记住钓具 GUID，这条鱼只能盲发（客户端可能挂不上竿）")
 		}
-		s.fishingState.Arm(f)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		hook, hookErr := svc.MountedHookGUID(ctx, s.userOrGuest(), gear)
+		cancel()
+		if hookErr != nil {
+			s.log(">> 咬钩 没读到线末端鱼钩，#23 暂用鱼实例兜底：" + hookErr.Error())
+		} else {
+			f.HookGUID = hook
+		}
+		if !s.fishingState.ArmIfInWater(seq, f) {
+			s.log(">> 咬钩 已取消：选鱼完成前玩家已经收线或重新抛竿")
+			return
+		}
 		frame, err := svc.BiteFrame(gear, f)
 		if err != nil {
 			s.log(">> 咬钩 14/14 拼帧失败: " + err.Error())
+			return
+		}
+		if !s.fishingState.InWater(seq) {
+			s.log(">> 咬钩 已取消：发包前饵已经离水")
 			return
 		}
 		if e := s.sendPush(frame); e != nil {
@@ -224,7 +294,35 @@ func (s *Session) scheduleBite(reason string) {
 		}
 		s.log(">> 咬钩(14/14) 推 " + strconv.Itoa(len(frame)) + "B " + describeCatch(f) +
 			" 实例=" + short(f.SetupGUID) + " 延迟 " + delay.String() +
-			" 搏鱼参数按 ruffe 那组常量（待按鱼种校准）")
+			" 鱼钩=" + short(f.HookGUID) + " 搏鱼参数按 ruffe 那组常量（待按鱼种校准）")
+	}()
+}
+
+// scheduleBiteRetry 重推客户端明确拒收（14/12 f0=3）的同一条鱼；不重新随机，
+// 并且仍受“饵必须在水中”的序号守门。
+func (s *Session) scheduleBiteRetry(f fishing.Fish, seq uint64, attempt int) {
+	go func() {
+		timer := time.NewTimer(6 * time.Second)
+		defer timer.Stop()
+		select {
+		case <-s.done:
+			return
+		case <-timer.C:
+		}
+		if !s.fishingState.InWater(seq) {
+			s.log(">> 咬钩重推 已取消：饵已经离水")
+			return
+		}
+		frame, err := s.srv.Deps.Fishing.BiteFrame(s.fishingState.Gear(), f)
+		if err != nil {
+			s.log(">> 咬钩重推 14/14 拼帧失败: " + err.Error())
+			return
+		}
+		if e := s.sendPush(frame); e != nil {
+			s.log(">> 咬钩重推 14/14 推不出去：" + friendlyErr(e))
+			return
+		}
+		s.log(">> 咬钩重推(14/14) 第" + strconv.Itoa(attempt) + "次 " + describeCatch(f))
 	}()
 }
 

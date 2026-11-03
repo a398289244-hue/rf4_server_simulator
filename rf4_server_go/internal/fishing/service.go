@@ -58,9 +58,81 @@ func (s *Service) CastPrepareFrame(callID uint32, gearGUID string) ([]byte, erro
 	return CastReply(s.tbl, callID, gearGUID)
 }
 
+// CastPrepareFrameWithHook 回 14/1，并把真实线末端钩 GUID 放进 obj158#03。
+func (s *Service) CastPrepareFrameWithHook(callID uint32, gearGUID, hookGUID string) ([]byte, error) {
+	return CastReplyWithHook(s.tbl, callID, gearGUID, hookGUID)
+}
+
 // BiteFrame 拼 14/14「有鱼咬钩」推送。gear 是这次抛竿那套钓具的 GUID。
 func (s *Service) BiteFrame(gear string, f Fish) ([]byte, error) {
 	return SetupPush(s.tbl, gear, f)
+}
+
+// MountedHookGUID 从 MySQL 的 objects.elem 权威记录里读取这根竿当前线末端鱼钩。
+// rig/rig_component 只是方便查看的投影，发鱼不能依赖投影是否及时写成。
+func (s *Service) MountedHookGUID(ctx context.Context, username, gearGUID string) (string, error) {
+	if s == nil || s.st == nil || s.tbl == nil {
+		return "", errors.New("fishing: 没有可用的数据入口或协议表")
+	}
+	objs, err := s.st.Objects(ctx, username)
+	if err != nil {
+		return "", err
+	}
+	want := normGUID(gearGUID)
+	var rod *gamestore.Object
+	for i := range objs {
+		if normGUID(objs[i].GUID) == want {
+			rod = &objs[i]
+			break
+		}
+	}
+	if rod == nil || rod.Elem == "" {
+		return "", fmt.Errorf("竿 %s 没有物件记录", want)
+	}
+	raw, err := hex.DecodeString(rod.Elem)
+	if err != nil {
+		return "", fmt.Errorf("竿 %s 的物件记录不是合法 hex: %w", want, err)
+	}
+	v, used, err := s.tbl.DecodeValue(raw, 0)
+	if err != nil {
+		return "", fmt.Errorf("竿 %s 的物件记录解不开: %w", want, err)
+	}
+	if used != len(raw) {
+		return "", fmt.Errorf("竿 %s 的物件记录只解了 %d/%d 字节", want, used, len(raw))
+	}
+	rodObj, ok := v.(*wire.Obj)
+	if !ok || len(rodObj.Fields) <= 5 {
+		return "", fmt.Errorf("竿 %s 的记录里没有钓组对象", want)
+	}
+	rigObj, ok := rodObj.Fields[5].Value.(*wire.Obj)
+	if !ok || rigObj == nil || len(rigObj.Fields) <= 2 {
+		return "", fmt.Errorf("竿 %s 还没有钓组", want)
+	}
+	parts, ok := rigObj.Fields[2].Value.(wire.Args)
+	if !ok {
+		return "", fmt.Errorf("竿 %s 的钓组没有组件表", want)
+	}
+	for _, item := range parts.Items {
+		part, ok := item.(*wire.Obj)
+		if !ok || len(part.Fields) < 2 || fishPartCategory(part.Fields[0].Value) != 12 {
+			continue
+		}
+		if g, ok := part.Fields[1].Value.(wire.GUID); ok && normGUID(g.Hex) != "" {
+			return normGUID(g.Hex), nil
+		}
+	}
+	return "", fmt.Errorf("竿 %s 的钓组里没有鱼钩", want)
+}
+
+func fishPartCategory(v wire.Value) int {
+	switch n := v.(type) {
+	case wire.OptByte:
+		return int(n.V)
+	case wire.Num32:
+		return int(n.V)
+	default:
+		return 0
+	}
 }
 
 // EndFrame 回 14/4（起鱼结算）。档案是现取的，所以银币/技能点跟着最新状态走。

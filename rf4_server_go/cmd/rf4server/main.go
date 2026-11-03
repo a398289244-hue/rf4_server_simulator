@@ -221,7 +221,7 @@ func run(cfg config) error {
 					if len(locs) > 12 {
 						locs = locs[:12] // 开机日志别刷屏，列前 12 个够挑了
 					}
-					log.Boot("boot", "钓鱼已装: 14/1 抛竿 + 14/14 咬钩推送 + 14/4 起鱼 + 14/5 留鱼（"+
+					log.Boot("boot", "钓鱼已装: 14/1 准备 + 14/2 抛出 + 14/7 入水确认 + 14/14 咬钩推送 + 14/4 起鱼 + 14/5 留鱼（"+
 						strconv.Itoa(nSp)+" 个鱼种 / "+strconv.Itoa(nLoc)+" 个水域，"+
 						"本次水域 "+cfg.FishLoc+" 指定鱼种 "+chooseStr(cfg.FishKey != "", cfg.FishKey, "按名册随机")+"）")
 					log.Boot("boot", "库里认识的水域: "+joinComma(locs)+" …（改 --fish-loc 换一片，改库里的名册换鱼）")

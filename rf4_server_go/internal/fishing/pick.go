@@ -51,6 +51,9 @@ type Fish struct {
 	// ModelGUID obj27#23 那个「判鱼模型附加 guid」。真服每帧都不一样，含义还没查实，
 	// 这边按 SetupGUID 派生（同一条鱼重登也不会变），比纯随机更好对答案。
 	ModelGUID string
+	// HookGUID 是当前钓组线末端鱼钩的真实实例 GUID。客户端拿 obj27#23 去钓组里
+	// 找鱼挂在哪个钩上；发成鱼自己的随机 GUID 时会立刻回 14/12 拒绝这条鱼。
+	HookGUID string
 }
 
 // Picker 负责「这一竿子上钩了什么」。水域、必出鱼种、随机源都能从外面塞进来，

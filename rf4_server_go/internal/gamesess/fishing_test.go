@@ -1,6 +1,7 @@
 package gamesess
 
-// 这条测试走的是「钓鱼整条链路」：抛竿 -> 服务器排咬钩 -> 推 14/14 -> 客户端回 14/5 -> 入库。
+// 这条测试走的是「钓鱼整条链路」：准备抛竿 -> 抛出 -> 水中状态 ->
+// 服务器排咬钩 -> 推 14/14 -> 客户端回 14/5 -> 入库。
 // 单测（internal/fishing）已经逐字节对过真服答案，这边盯的是**接线**：
 // 路由挂上了没、定时器能不能把推进来、keep 里的鱼 GUID 能不能对上我们推出去那条、
 // 鱼护和流水有没有真写进去。少爷实机测之前先由这条兜住，免得又是「日志说发了但界面没动静」。
@@ -169,6 +170,14 @@ func TestFishingFlowOverSocket(t *testing.T) {
 		t.Fatalf("14/1 应答里的钓具 GUID 不对: %q，要 %q", got, gearGUIDTest)
 	}
 
+	// 14/2 只表示抛出，14/7 才是饵进入水中后的周期状态。没有 14/7 绝不能开始派鱼。
+	p.askArgs(14, 2, 2, []wire.Value{wire.GUID{Hex: gearGUIDTest}})
+	cast, _, _ := p.nextFrame("14/2 应答")
+	if cid := callIDOf(cast); cid != 2 || marker(cast) != -2 {
+		t.Fatalf("14/2 应答不对：cid=%d marker=%d", cid, marker(cast))
+	}
+	p.askArgs(14, 7, 3, []wire.Value{wire.GUID{Hex: gearGUIDTest}})
+
 	// 咬钩推送：定时器在那边，得等一小会儿。中间可能夹着别的推送，所以按命令号挑。
 	var bite *wire.Obj
 	var fishGUID string
@@ -203,10 +212,10 @@ func TestFishingFlowOverSocket(t *testing.T) {
 	}
 
 	// 14/5 留鱼：把刚推出去那条鱼的 GUID 原样回显
-	p.askArgs(14, 5, 2, []wire.Value{wire.GUID{Hex: gearGUIDTest}, wire.GUID{Hex: fishGUID}})
+	p.askArgs(14, 5, 4, []wire.Value{wire.GUID{Hex: gearGUIDTest}, wire.GUID{Hex: fishGUID}})
 	keep, _, _ := p.nextFrame("14/5 应答")
-	if cid := callIDOf(keep); cid != 2 {
-		t.Fatalf("14/5 应答里的 call_id 不对: %d，要 2", cid)
+	if cid := callIDOf(keep); cid != 4 {
+		t.Fatalf("14/5 应答里的 call_id 不对: %d，要 4", cid)
 	}
 	if marker(keep) != -2 {
 		t.Fatalf("14/5 回的应该是应答帧，实际 marker=%d", marker(keep))
