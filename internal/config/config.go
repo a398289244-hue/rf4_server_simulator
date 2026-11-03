@@ -42,8 +42,9 @@ type Tunnel struct {
 }
 
 type Gateway struct {
-	LoginAddr             string  `yaml:"login_addr"`    // HTTPS 登录监听，如 :443
-	RealtimeAddr          string  `yaml:"realtime_addr"` // realtime TCP 监听，如 :9341
+	LoginAddr             string  `yaml:"login_addr"`        // HTTPS 登录监听，如 :443
+	LoginCompatAddr       string  `yaml:"login_compat_addr"` // 可选：旧版 CN 客户端的明文 HTTP 登录兼容口，如 127.0.0.1:7515
+	RealtimeAddr          string  `yaml:"realtime_addr"`     // realtime TCP 监听，如 :9341
 	CertFile              string  `yaml:"cert_file"`
 	KeyFile               string  `yaml:"key_file"`
 	AdvertiseHost         string  `yaml:"advertise_host"`          // 写入 <logon><host> 的地址

@@ -244,6 +244,7 @@ func (s *Server) prepareNewItem(ctx context.Context, uid int64, itemID, containe
 		}
 	}
 	s.materializeInto(ctx, cls.Class, def, obj, guid, 1, 1)
+	s.ensureMinimumFishingLength(def, cls.Class, obj)
 	if idx := fieldIdxByCS(cls.Class, csCreated); idx >= 0 {
 		obj.Fields[idx].Num = ptrU64(uint64(netTicksNow()))
 	}
@@ -278,6 +279,43 @@ func (s *Server) prepareNewItem(ctx context.Context, uid int64, itemID, containe
 	}
 	it.FieldsJSON = fj
 	return it, nil
+}
+
+// minimumFishingLengthM 是新主线/前导实例的默认最小可用长度。
+// 客户端装配界面默认按 18m 起算；定义本身更长时保留更长长度。
+const minimumFishingLengthM = 18.0
+
+// ensureMinimumFishingLength 只约束新建实例，不回头修改已有物品。
+// 主线长度在 csQty（整数米）；前导长度在 hkgndoipdlc（F32 米）。
+func (s *Server) ensureMinimumFishingLength(def *store.ItemDef, class string, obj *proto.Value) {
+	if def == nil || obj == nil {
+		return
+	}
+	switch def.Category {
+	case catLine:
+		idx := fieldIdxByCS(class, csQty)
+		if idx >= 0 && idx < len(obj.Fields) && obj.Fields[idx].Num != nil {
+			if u64Of(obj.Fields[idx].Num) < uint64(minimumFishingLengthM) {
+				obj.Fields[idx].Num = ptrU64(uint64(minimumFishingLengthM))
+			}
+		}
+	case catLead, catWireLeader:
+		// 前导本体是外层容器，实际长度写在内嵌线材对象的 ljnnpokapig。
+		// 定义里的 hkgndoipdlc 是成品前导长度，materialize 后会生成 f1/f2 两个子对象。
+		for i := range obj.Fields {
+			sub := obj.Fields[i].Val
+			if sub == nil || sub.Kind != proto.KindObj {
+				continue
+			}
+			idx := fieldIdxByCS(sub.Class, csQty)
+			if idx < 0 || idx >= len(sub.Fields) || sub.Fields[idx].Num == nil {
+				continue
+			}
+			if u64Of(sub.Fields[idx].Num) < uint64(minimumFishingLengthM) {
+				sub.Fields[idx].Num = ptrU64(uint64(minimumFishingLengthM))
+			}
+		}
+	}
 }
 
 // grantPreparedItemTx 将预处理物品入包；merge=true 时按类别语义并入已有堆。

@@ -74,6 +74,34 @@ func economyCraftTree(recipe string, materials []craftSlot, qty uint64) *proto.V
 	))
 }
 
+func TestNewLeaderGetsMinimumEighteenMeters(t *testing.T) {
+	srv, _ := newEconomyTxTestServer(t)
+	it, err := srv.prepareNewItem(context.Background(), 2001, "fl_leader_40335", "backpack", 1, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fields, err := FieldsFromJSON(it.FieldsJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := int64(0)
+	for i := range fields {
+		sub := fields[i].Val
+		if sub == nil || sub.Kind != proto.KindObj {
+			continue
+		}
+		idx := fieldIdxByCS(sub.Class, csQty)
+		if idx >= 0 && idx < len(sub.Fields) && sub.Fields[idx].Num != nil {
+			if n := int64(u64Of(sub.Fields[idx].Num)); n > got {
+				got = n
+			}
+		}
+	}
+	if got < int64(minimumFishingLengthM) {
+		t.Fatalf("新前导长度=%dm，应至少为 %.0fm", got, minimumFishingLengthM)
+	}
+}
+
 func TestMarketSellAtomicAndDedup(t *testing.T) {
 	srv, db := newEconomyTxTestServer(t)
 	ctx0 := context.Background()

@@ -13,6 +13,7 @@ sqlite:
 
 gateway:
   login_addr: ":443"                  # HTTPS 登录监听地址。
+  login_compat_addr: "127.0.0.1:7515" # 可选：旧版 CN 客户端明文 HTTP 登录兼容口；留空则关闭。
   realtime_addr: ":9341"              # 游戏客户端 realtime 监听地址。
   cert_file: "certs/server.crt"       # HTTPS 证书；缺失时自动生成。
   key_file: "certs/server.key"        # HTTPS 私钥；缺失时自动生成。
