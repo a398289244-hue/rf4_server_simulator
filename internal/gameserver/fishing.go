@@ -85,9 +85,10 @@ func (s *Server) stateFor(uid int64) *FishState {
 // 0x200 水层静止（浮标）、0x800 底部静止（沉底/Feeder）、0x1000 水面静止。
 const rigAnimSettledMask = 0x200 | 0x800 | 0x1000
 
-// rigAnimInWaterMask 是“钓组在水中”的位。实测：朝水里抛竿几秒后出现 0x400，
-// 朝岸上抛竿一直只有 0x0，可用于把“饵扔在陆地”的抛竿挡在出鱼之前。
-const rigAnimInWaterMask = 0x400
+// rigAnimInWaterMask 是“钓组在水中”的位族。协议字段表确认
+// 0x200=MotionlessInWaterColumn；0x400/0x800/0x1000 分别是不同水层/姿态的
+// 静止状态。朝岸上抛竿不会出现这些位，因此仍能挡住“饵落在陆地”。
+const rigAnimInWaterMask = 0x200 | 0x400 | 0x800 | 0x1000
 
 // ---- 咬钩延迟 ----
 

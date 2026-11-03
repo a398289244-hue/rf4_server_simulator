@@ -759,7 +759,7 @@ func findObj(root *proto.Value, class string) *proto.Value {
 
 // fireAndForget14 客户端上报族：只记录不回包。
 func hFishingStep(ctx *Ctx) ([]byte, bool) {
-	// 14/7：obj lobemkloehp f5=anim 位掩码；0x200=浮标立稳（绝不当作起竿）
+	// 14/7：obj lobemkloehp f5=anim 位掩码；0x200=MotionlessInWaterColumn（水中静止）
 	if ctx.Tree != nil {
 		if o := findObj(ctx.Tree, "lobemkloehp"); o != nil && o.FieldCount() > 5 {
 			anim := u32Of(o.Field(5).Num)
@@ -784,7 +784,7 @@ func hFishingStep(ctx *Ctx) ([]byte, bool) {
 			}
 			changed := anim != st.LastAnim
 			st.LastAnim = anim
-			// 动画位 0x400 = 钓组在水中（实测：水里抛竿几秒后出现，岸上没有）。
+			// 0x200/0x400/0x800/0x1000 是不同水层与姿态的“在水中”位族；岸上不会出现。
 			enterWater := false
 			needBite := false
 			if st.CastActive && !st.InWater && anim&rigAnimInWaterMask != 0 {
@@ -797,10 +797,10 @@ func hFishingStep(ctx *Ctx) ([]byte, bool) {
 			}
 			st.mu.Unlock()
 			if needBite {
-				ctx.Log.Info("钓组在水中(0x400)，补排咬钩", "f5", fmt.Sprintf("0x%X", anim))
+				ctx.Log.Info("钓组在水中，补排咬钩", "f5", fmt.Sprintf("0x%X", anim))
 				ctx.Sess.Srv.scheduleBiteForHooked(ctx.Sess, st)
 			} else if enterWater {
-				ctx.Log.Info("钓组在水中(0x400)", "f5", fmt.Sprintf("0x%X", anim))
+				ctx.Log.Info("钓组在水中", "f5", fmt.Sprintf("0x%X", anim))
 			}
 			// 14/7 每帧都会发送，仅在动画位变化时记录日志。
 			if changed {

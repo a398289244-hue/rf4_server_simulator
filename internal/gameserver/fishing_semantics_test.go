@@ -73,15 +73,18 @@ func TestFishingTickRecomputesSettledAndLocation(t *testing.T) {
 		fields[6] = proto.Field{Op: "STR", Str: strPtr(loc)}
 		return proto.Args524(proto.Obj("lobemkloehp", 0, fields...))
 	}
+	st := srv.stateFor(sess.Userid)
+	st.mu.Lock()
+	st.CastActive = true
+	st.mu.Unlock()
 	if _, ok := hFishingStep(&Ctx{Sess: sess, Main: 14, Sub: 7,
 		Tree: makeTick(0x200, "loc12_01"), DecodeOK: true, Log: logging.Discard()}); !ok {
 		t.Fatal("14/7 未处理")
 	}
-	st := srv.stateFor(sess.Userid)
 	st.mu.Lock()
-	if !st.RigSettled || st.Loc != "loc12_01" {
+	if !st.RigSettled || !st.InWater || st.Loc != "loc12_01" {
 		st.mu.Unlock()
-		t.Fatalf("首帧 settled=%v loc=%q", st.RigSettled, st.Loc)
+		t.Fatalf("首帧 settled=%v in_water=%v loc=%q", st.RigSettled, st.InWater, st.Loc)
 	}
 	st.mu.Unlock()
 

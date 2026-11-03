@@ -38,7 +38,7 @@ func TestGatewayFullHandshakeAndEcho(t *testing.T) {
 	if len(opened) != 1 {
 		t.Fatalf("stub 应收到 1 次 OPEN, 实得 %d", len(opened))
 	}
-	if opened[0].Token != token || opened[0].Reconnect {
+	if opened[0].Token != token || opened[0].Userid != userid || opened[0].Reconnect {
 		t.Fatalf("OPEN payload 不符: %+v", opened[0])
 	}
 	if dataN != 1 {
