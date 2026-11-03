@@ -1,0 +1,66 @@
+{
+  "gateway": {
+    "version": "rf4-4.0.25034-lan-v33-required-launcher",
+    "routePrefix": "/lv33/",
+    "gameVersion": "4.0.25034",
+    "region": "CN",
+    "loginSuccessBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response success=\"true\"><token>{{token}}</token><host>{{host}}</host><port>{{port}}</port><region>{{region}}</region><userid>{{userid}}</userid><logintoken>{{logintoken}}</logintoken><logintokenexpires>{{logintokenexpires}}</logintokenexpires></response>",
+    "unknownRouteBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response success=\"false\"><error>1</error><description>Invalid local request route</description></response>",
+    "errors": {
+      "banned": {
+        "code": 7,
+        "description": "Account is blocked"
+      },
+      "noAccount": {
+        "code": 3,
+        "description": "Account not found"
+      },
+      "badPassword": {
+        "code": 4,
+        "description": "Invalid password"
+      },
+      "badVersion": {
+        "code": 5,
+        "description": "Game version mismatch"
+      }
+    },
+    "mode": "local",
+    "unknownRouteStatus": 400,
+    "gamePort": 19213,
+    "upstreamIp": "127.0.0.1",
+    "upstreamPort": 19214,
+    "upstreamHostHeader": "api.rf4game.com",
+    "localHost": "127.0.0.1"
+  },
+  "users": [
+    {
+      "username": "return2",
+      "nickname": "TestAngler",
+      "userId": 1000002,
+      "passwordSha256": "ba8cb48dd06d1f3e6403207f249787bd475745e82d722db5cdf591bb20280891",
+      "passwordSha1": "1c5d5908b6353a1fb0d68fd940bfaf5245a5ac76",
+      "level": 1,
+      "stars": 0,
+      "email": "",
+      "emailBound": false,
+      "emailMasked": "",
+      "premium": false,
+      "premiumUntil": 0,
+      "goldMinor": 0,
+      "silverMinor": 1000000,
+      "avatar": "",
+      "createdAt": 0,
+      "machineIds": [],
+      "muted": false,
+      "inPrison": false,
+      "prisonSentenceId": 0,
+      "requiredGrams": 0,
+      "creditedGrams": 0,
+      "prisonMessage": "",
+      "loginIps": [],
+      "lastLoginAt": 0
+    }
+  ],
+  "skills": {},
+  "objects": {}
+}

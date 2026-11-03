@@ -1,0 +1,5586 @@
+{
+ "meta": {
+  "generated": "2026-11-02T06:58:43.299Z",
+  "repo": "辅助学习游戏制作/gh_refs/rf4_server_simulator",
+  "sources": {
+   "contract": true,
+   "kinds": true,
+   "responses": true,
+   "argcode": true,
+   "measuredFromCapture": 35
+  },
+  "priority": "measured > kinds > responses > contract",
+  "note": "measured 是我们自己真服录制逐条解码出来的顶层形状，最硬；他家表只当兜底。"
+ },
+ "table": {
+  "1/1": {
+   "measured": {
+    "len": 32,
+    "tailLeft": 0,
+    "kind": "str"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "game/version",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/version"
+    ],
+    "method": "fanpebifhok",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "string"
+    ]
+   }
+  },
+  "1/2": {
+   "measured": {
+    "len": 18,
+    "tailLeft": 0,
+    "kind": "long"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "game/time",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/time"
+    ],
+    "method": "feamcopbmcp",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "long"
+    ]
+   }
+  },
+  "1/4": {
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "game/configs",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "game/configs"
+    ],
+    "method": "eodgbiejbjj",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "byte"
+    ]
+   }
+  },
+  "1/5": {
+   "measured": {
+    "len": 408,
+    "tailLeft": 0,
+    "kind": "array"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "game/configs_version",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/configs_version"
+    ],
+    "method": "haoenplojac",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "string"
+    ]
+   }
+  },
+  "1/6": {
+   "kinds": {
+    "kind": "str",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "game/issue_token",
+    "kind": "dto",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/issue_token"
+    ],
+    "method": "jnejfelnmkd",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "string"
+    ]
+   }
+  },
+  "1/7": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "game/locale",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/locale"
+    ],
+    "method": "plodhccjjhh",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "1/8": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "game/queryP",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/queryP"
+    ],
+    "method": "plnefhhfinh",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "1/9": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "game/check",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/check"
+    ],
+    "method": "iaknkffcgfi",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "1/10": {
+   "contract": {
+    "names": [
+     "gljbapdpdkg"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     15003
+    ],
+    "classes": [
+     "djpmeflcchp"
+    ]
+   },
+   "src": "contract"
+  },
+  "1/12": {
+   "measured": {
+    "len": 4738,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 205,
+    "class": "dobfogbcggd"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "game/place",
+    "kind": "dto",
+    "dto": "dobfogbcggd",
+    "tid": 205,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/place"
+    ],
+    "method": "dnpmfjelapg",
+    "kind": "dto+capture",
+    "type_ids": [
+     205
+    ],
+    "classes": [
+     "kaeddljglhl"
+    ]
+   }
+  },
+  "1/13": {
+   "measured": {
+    "len": 4784,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 206,
+    "class": "cgbaffjpbkg"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "game/pos",
+    "kind": "dto",
+    "dto": "cgbaffjpbkg",
+    "tid": 206,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "game/pos"
+    ],
+    "method": "fdmicdnmbgb",
+    "kind": "dto+capture",
+    "type_ids": [
+     206
+    ],
+    "classes": [
+     "ehkpjofhbfg"
+    ]
+   }
+  },
+  "1/14": {
+   "measured": {
+    "len": 5114,
+    "tailLeft": 0,
+    "kind": "vallist"
+   },
+   "src": "measured"
+  },
+  "1/15": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "fpnepocljdi"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "1/16": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "ofbjkojmjag"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "1/18": {
+   "contract": {
+    "names": [
+     "iemomknpjbd"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "bool"
+    ]
+   },
+   "src": "contract"
+  },
+  "2/1": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/2": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/3": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/4": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/5": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/6": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/8": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/9": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/10": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/11": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/12": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/13": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/14": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/15": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "2/16": {
+   "contract": {
+    "names": [
+     "push:profile"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "3/1": {
+   "measured": {
+    "len": 262,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 307,
+    "class": "ghfbofgdflm"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "player/profile",
+    "kind": "dto",
+    "dto": "ghfbofgdflm",
+    "tid": 307,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/profile"
+    ],
+    "method": "chfcceiadie",
+    "kind": "dto+capture",
+    "type_ids": [
+     307
+    ],
+    "classes": [
+     "pjhgpkgpjih"
+    ]
+   }
+  },
+  "3/2": {
+   "responses": {
+    "sem": "player/fish_stats",
+    "kind": "dto",
+    "dto": "jahbacemfof",
+    "tid": 321,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/fish_stats"
+    ],
+    "method": "hgegjnjafcn",
+    "kind": "dto+capture",
+    "type_ids": [
+     321
+    ],
+    "classes": [
+     "ilhlknehckb"
+    ]
+   }
+  },
+  "3/3": {
+   "responses": {
+    "sem": "player/achievements",
+    "kind": "dto",
+    "dto": "efnkohdcnld",
+    "tid": 305,
+    "array": true
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/achievements"
+    ],
+    "method": "oeihadiimia",
+    "kind": "dto+capture",
+    "type_ids": [
+     305
+    ],
+    "classes": [
+     "hpkbgahniab"
+    ]
+   }
+  },
+  "3/6": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "ckfocaolppf"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/7": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "bplepbfgpmk"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/check_ticket",
+    "kind": "dto",
+    "dto": "bplepbfgpmk",
+    "tid": 162,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/check_ticket"
+    ],
+    "method": "oahfgalcepa",
+    "kind": "dto",
+    "type_ids": [
+     162
+    ],
+    "classes": [
+     "ckdficiaaji"
+    ]
+   }
+  },
+  "3/8": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/training_status",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/training_status"
+    ],
+    "method": "kjghjdbnehm",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/9": {
+   "responses": {
+    "sem": "player/vital_step",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/vital_step"
+    ],
+    "method": "pbodjcpbcdi",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/10": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/boat_use",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/boat_use"
+    ],
+    "method": "demidnaaank",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/11": {
+   "responses": {
+    "sem": "player/campfire_start",
+    "kind": "dto",
+    "dto": "ihaaofcmopp",
+    "tid": 802,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/campfire_start"
+    ],
+    "method": "lbdjociiafl",
+    "kind": "dto",
+    "type_ids": [
+     802
+    ],
+    "classes": [
+     "gdalkjnfiep"
+    ]
+   }
+  },
+  "3/12": {
+   "responses": {
+    "sem": "player/fall_under_water",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/fall_under_water"
+    ],
+    "method": "kmpdmmojjhp",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/13": {
+   "responses": {
+    "sem": "player/kitchen_eat",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/kitchen_eat"
+    ],
+    "method": "aimhjifampo",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "3/14": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/tackle_aid",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/tackle_aid"
+    ],
+    "method": "ofpmfnhalkg",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "3/15": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/tackle_aid_spin",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/tackle_aid_spin"
+    ],
+    "method": "ppkfnndchcp",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "3/16": {
+   "contract": {
+    "names": [
+     "cfbomeockod"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     2015
+    ],
+    "classes": [
+     "iidloljandl"
+    ]
+   },
+   "src": "contract"
+  },
+  "3/17": {
+   "responses": {
+    "sem": "player/fish_trophies",
+    "kind": "dto",
+    "dto": "dochkomimic",
+    "tid": 323,
+    "array": true
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/fish_trophies"
+    ],
+    "method": "chiebbnmnkf",
+    "kind": "dto+capture",
+    "type_ids": [
+     323
+    ],
+    "classes": [
+     "lhlbclekmin"
+    ]
+   }
+  },
+  "3/18": {
+   "responses": {
+    "sem": "player/warnings",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/warnings"
+    ],
+    "method": "jopmhkjknlb",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "lcjmijeeebm"
+    ]
+   }
+  },
+  "3/19": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/read_warning",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/read_warning"
+    ],
+    "method": "ckppclbegon",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "3/20": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ghfbofgdflm"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/change_name",
+    "kind": "dto",
+    "dto": "ghfbofgdflm",
+    "tid": 307,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/change_name"
+    ],
+    "method": "dcddpnjegbk",
+    "kind": "dto",
+    "type_ids": [
+     307
+    ],
+    "classes": [
+     "pjhgpkgpjih"
+    ]
+   }
+  },
+  "3/21": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ghfbofgdflm"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/change_region",
+    "kind": "dto",
+    "dto": "ghfbofgdflm",
+    "tid": 307,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/change_region"
+    ],
+    "method": "mpjcdcoimif",
+    "kind": "dto",
+    "type_ids": [
+     307
+    ],
+    "classes": [
+     "pjhgpkgpjih"
+    ]
+   }
+  },
+  "3/22": {
+   "kinds": {
+    "kind": "str",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "pckcdcpghbh"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "string"
+    ]
+   }
+  },
+  "3/23": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ghfbofgdflm"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "dlndednekdl"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     307
+    ],
+    "classes": [
+     "pjhgpkgpjih"
+    ]
+   }
+  },
+  "3/24": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "kffeojjoiap"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "3/25": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ebklfbjajcc"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/ban_submit",
+    "kind": "dto",
+    "dto": "ebklfbjajcc",
+    "tid": 304,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/ban_submit"
+    ],
+    "method": "dkfcpajpceg",
+    "kind": "dto",
+    "type_ids": [
+     304
+    ],
+    "classes": [
+     "gejoepggocf"
+    ]
+   }
+  },
+  "3/26": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ebklfbjajcc"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "player/ban_info",
+    "kind": "dto",
+    "dto": "ebklfbjajcc",
+    "tid": 304,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "player/ban_info"
+    ],
+    "method": "nfeohdlgikg",
+    "kind": "dto",
+    "type_ids": [
+     304
+    ],
+    "classes": [
+     "gejoepggocf"
+    ]
+   }
+  },
+  "3/27": {
+   "responses": {
+    "sem": "player/guitar_play",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "player/guitar_play"
+    ],
+    "method": "kpoopcjfkog",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/28": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ffoibocamkb"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "glonlbdjadi"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     13022
+    ],
+    "classes": [
+     "hoakpnkikjg"
+    ]
+   }
+  },
+  "3/29": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "onkfgefhlmd"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/30": {
+   "contract": {
+    "names": [
+     "oijhgekncpo"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   },
+   "src": "contract"
+  },
+  "3/31": {
+   "contract": {
+    "names": [
+     "anmllkbbgke"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   },
+   "src": "contract"
+  },
+  "3/32": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "ahfcgnafglo"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "3/33": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "pikfphffhkm"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "3/35": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "fmmbakkighp"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "3/36": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ifdefblccde"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "bjleglakenj"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     501
+    ],
+    "classes": [
+     "bkcgemhagon"
+    ]
+   }
+  },
+  "3/37": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ghfbofgdflm"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "eelajfjfiac"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     307
+    ],
+    "classes": [
+     "pjhgpkgpjih"
+    ]
+   }
+  },
+  "3/38": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ghfbofgdflm"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "elopgepoged"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     307
+    ],
+    "classes": [
+     "pjhgpkgpjih"
+    ]
+   }
+  },
+  "3/39": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "plopofeioap"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "3/40": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "enikeammfen"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "cchhefhdkfa"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     2015
+    ],
+    "classes": [
+     "iidloljandl"
+    ]
+   }
+  },
+  "3/41": {
+   "contract": {
+    "names": [
+     "ikbpbdkbflj"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     132
+    ],
+    "classes": [
+     "onobdmohahp"
+    ]
+   },
+   "src": "contract"
+  },
+  "4/1": {
+   "measured": {
+    "len": 26,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 133,
+    "class": "pbndmldbfai"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "items/info",
+    "kind": "dto",
+    "dto": "pbndmldbfai",
+    "tid": 133,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "items/info"
+    ],
+    "method": "dnmfmkmbgok",
+    "kind": "dto+capture",
+    "type_ids": [
+     133
+    ],
+    "classes": [
+     "nicjmgdnood"
+    ]
+   }
+  },
+  "4/4": {
+   "measured": {
+    "len": 892,
+    "tailLeft": 0,
+    "kind": "guidarr",
+    "n": 55
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "items/list",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "items/list"
+    ],
+    "method": "nafkinpcind",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "Guid"
+    ]
+   }
+  },
+  "4/5": {
+   "measured": {
+    "len": 11539,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "61",
+    "n": 55
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "items/get",
+    "kind": "dto",
+    "dto": "oafalmjejhh",
+    "tid": 132,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "items/get"
+    ],
+    "method": "gepffnlgfpm",
+    "kind": "dto+capture",
+    "type_ids": [
+     132,
+     115,
+     25,
+     100
+    ],
+    "classes": [
+     "onobdmohahp",
+     "blpddffbgjg",
+     "ecknbkpeeji",
+     "kbnbcppjkaf"
+    ]
+   }
+  },
+  "4/6": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "items/move",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "items/move"
+    ],
+    "method": "kjojjfnabfe",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "4/7": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "items/remove",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "items/remove"
+    ],
+    "method": "ndebnoanonb",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "4/8": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "items/use",
+    "kind": "dto",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "items/use"
+    ],
+    "method": "ljbipgaecel",
+    "kind": "dto+capture",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "4/9": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "items/suflag",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "items/suflag"
+    ],
+    "method": "amlaccoolch",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "4/10": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "lojhodeamja"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "4/20": {
+   "contract": {
+    "names": [
+     "push:items"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "4/21": {
+   "contract": {
+    "names": [
+     "push:items"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "4/22": {
+   "contract": {
+    "names": [
+     "push:items"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "5/1": {
+   "measured": {
+    "len": 5522,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 311,
+    "class": "djndmghegld"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "skills/get",
+    "kind": "dto",
+    "dto": "djndmghegld",
+    "tid": 311,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "skills/get"
+    ],
+    "method": "mdifmpcifka",
+    "kind": "dto+capture",
+    "type_ids": [
+     311
+    ],
+    "classes": [
+     "hbhfmnncgfk"
+    ]
+   }
+  },
+  "5/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "djndmghegld"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "skills/learn",
+    "kind": "dto",
+    "dto": "djndmghegld",
+    "tid": 311,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "skills/learn"
+    ],
+    "method": "gdbbicnhbop",
+    "kind": "dto+capture",
+    "type_ids": [
+     311
+    ],
+    "classes": [
+     "hbhfmnncgfk"
+    ]
+   }
+  },
+  "5/3": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "djndmghegld"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "skills/reset",
+    "kind": "dto",
+    "dto": "djndmghegld",
+    "tid": 311,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "skills/reset"
+    ],
+    "method": "abmakpdddfm",
+    "kind": "dto",
+    "type_ids": [
+     311
+    ],
+    "classes": [
+     "hbhfmnncgfk"
+    ]
+   }
+  },
+  "5/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "djndmghegld"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "skills/reset_all",
+    "kind": "dto",
+    "dto": "djndmghegld",
+    "tid": 311,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "skills/reset_all"
+    ],
+    "method": "hepfigacnfp",
+    "kind": "dto",
+    "type_ids": [
+     311
+    ],
+    "classes": [
+     "hbhfmnncgfk"
+    ]
+   }
+  },
+  "6/1": {
+   "responses": {
+    "sem": "comp/list",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "comp/list"
+    ],
+    "method": "fboebdbmabe",
+    "kind": "dto+capture",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/2": {
+   "responses": {
+    "sem": "comp/load",
+    "kind": "dto",
+    "dto": "idmlhhjaepi",
+    "tid": 1,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "comp/load"
+    ],
+    "method": "gngegcjdbnj",
+    "kind": "dto",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/3": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "kabpkpdlcbc"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/results",
+    "kind": "dto",
+    "dto": "kabpkpdlcbc",
+    "tid": 4,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/results"
+    ],
+    "method": "ebegeidlcag",
+    "kind": "dto",
+    "type_ids": [
+     4
+    ],
+    "classes": [
+     "oncbocpddcj"
+    ]
+   }
+  },
+  "6/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "idmlhhjaepi"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/create",
+    "kind": "dto",
+    "dto": "idmlhhjaepi",
+    "tid": 1,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/create"
+    ],
+    "method": "dcmlpddjkcg",
+    "kind": "dto",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/5": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "idmlhhjaepi"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/change",
+    "kind": "dto",
+    "dto": "idmlhhjaepi",
+    "tid": 1,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/change"
+    ],
+    "method": "giplpjjadln",
+    "kind": "dto",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/6": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "idmlhhjaepi"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/kick",
+    "kind": "dto",
+    "dto": "idmlhhjaepi",
+    "tid": 1,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/kick"
+    ],
+    "method": "hnaicigohgg",
+    "kind": "dto",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/7": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "idmlhhjaepi"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/join",
+    "kind": "dto",
+    "dto": "idmlhhjaepi",
+    "tid": 1,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/join"
+    ],
+    "method": "adjghanofhk",
+    "kind": "dto",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/8": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/leave",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/leave"
+    ],
+    "method": "hegeepffkai",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "6/9": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/change_team",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/change_team"
+    ],
+    "method": "biafnkmckef",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "6/10": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/set_ready",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/set_ready"
+    ],
+    "method": "chaednmfhgk",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "6/11": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/message",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/message"
+    ],
+    "method": "djicomaekha",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "6/12": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/start",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/start"
+    ],
+    "method": "fekboeegmkj",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "6/13": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "idmlhhjaepi"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/test_create",
+    "kind": "dto",
+    "dto": "idmlhhjaepi",
+    "tid": 1,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/test_create"
+    ],
+    "method": "mbgcogneeim",
+    "kind": "dto",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/14": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "idmlhhjaepi"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "comp/test_join",
+    "kind": "dto",
+    "dto": "idmlhhjaepi",
+    "tid": 1,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "comp/test_join"
+    ],
+    "method": "ehajkpnkdej",
+    "kind": "dto",
+    "type_ids": [
+     1
+    ],
+    "classes": [
+     "ngojnfbjbld"
+    ]
+   }
+  },
+  "6/15": {
+   "contract": {
+    "names": [
+     "push:comp"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "6/16": {
+   "contract": {
+    "names": [
+     "push:comp"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "6/17": {
+   "contract": {
+    "names": [
+     "push:comp"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "6/18": {
+   "contract": {
+    "names": [
+     "push:comp"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "8/1": {
+   "contract": {
+    "names": [
+     "push:forumtours"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "8/2": {
+   "contract": {
+    "names": [
+     "push:forumtours"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "8/3": {
+   "contract": {
+    "names": [
+     "push:forumtours"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "8/4": {
+   "contract": {
+    "names": [
+     "push:forumtours"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "8/5": {
+   "contract": {
+    "names": [
+     "push:forumtours"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "8/6": {
+   "contract": {
+    "names": [
+     "push:forumtours"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "9/1": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "beckiiffkem"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "crafting/craft",
+    "kind": "dto",
+    "dto": "beckiiffkem",
+    "tid": 803,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "crafting/craft"
+    ],
+    "method": "mabcaiknchp",
+    "kind": "dto",
+    "type_ids": [
+     803
+    ],
+    "classes": [
+     "emifcdomieb"
+    ]
+   }
+  },
+  "9/3": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "beckiiffkem"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "crafting/mine2",
+    "kind": "dto",
+    "dto": "beckiiffkem",
+    "tid": 803,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "crafting/mine2"
+    ],
+    "method": "mmidijdldeg",
+    "kind": "dto",
+    "type_ids": [
+     803
+    ],
+    "classes": [
+     "emifcdomieb"
+    ]
+   }
+  },
+  "9/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "ifdefblccde"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "aljaoanodmf"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     501
+    ],
+    "classes": [
+     "bkcgemhagon"
+    ]
+   }
+  },
+  "9/5": {
+   "measured": {
+    "len": 15,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "97",
+    "n": 0
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "crafting/tmplts",
+    "kind": "dto",
+    "dto": "dmolhiobcbb",
+    "tid": 171,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "crafting/tmplts"
+    ],
+    "method": "cnkcennlnjg",
+    "kind": "dto",
+    "type_ids": [
+     171
+    ],
+    "classes": [
+     "hkjgdnepdoh"
+    ]
+   }
+  },
+  "9/6": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dmolhiobcbb"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "crafting/addtmplt",
+    "kind": "dto",
+    "dto": "dmolhiobcbb",
+    "tid": 171,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "crafting/addtmplt"
+    ],
+    "method": "dibjppfgghh",
+    "kind": "dto",
+    "type_ids": [
+     171
+    ],
+    "classes": [
+     "hkjgdnepdoh"
+    ]
+   }
+  },
+  "9/7": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "crafting/deltmplt",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "crafting/deltmplt"
+    ],
+    "method": "alhiikhnhif",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "11/1": {
+   "measured": {
+    "len": 107,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "65",
+    "n": 4
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "equip/slots",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "equip/slots"
+    ],
+    "method": "epglajcgpbb",
+    "kind": "dto+capture",
+    "type_ids": [
+     136
+    ],
+    "classes": [
+     "bhcpmfooikh"
+    ]
+   }
+  },
+  "11/2": {
+   "measured": {
+    "len": 32,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 136,
+    "class": "iiemhjlblcc"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "equip/slots_set",
+    "kind": "dto",
+    "dto": "iiemhjlblcc",
+    "tid": 136,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "equip/slots_set"
+    ],
+    "method": "aapgbelmffa",
+    "kind": "dto+capture",
+    "type_ids": [
+     136
+    ],
+    "classes": [
+     "bhcpmfooikh"
+    ]
+   }
+  },
+  "11/3": {
+   "responses": {
+    "sem": "equip/slots_remove",
+    "kind": "dto",
+    "dto": "iiemhjlblcc",
+    "tid": 136,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "equip/slots_remove"
+    ],
+    "method": "hgaabbllhch",
+    "kind": "dto+capture",
+    "type_ids": [
+     136
+    ],
+    "classes": [
+     "bhcpmfooikh"
+    ]
+   }
+  },
+  "12/1": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "feeding/throw",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "feeding/throw"
+    ],
+    "method": "fdgifblhbcl",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "13/1": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "handitem/set_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "handitem/set_comp"
+    ],
+    "method": "dcieaifhham",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "13/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "handitem/remove_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "handitem/remove_comp"
+    ],
+    "method": "bnadebamlaj",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "13/3": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "handitem/remove_all",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "handitem/remove_all"
+    ],
+    "method": "kdiggacaefb",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "13/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "lfnjkiffphn"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "handitem/prepare",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "handitem/prepare"
+    ],
+    "method": "cocaejamjbn",
+    "kind": "dto",
+    "type_ids": [
+     158
+    ],
+    "classes": [
+     "pomgbkkdeek"
+    ]
+   }
+  },
+  "13/5": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "lmbomkliaad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "handitem/throw",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "handitem/throw"
+    ],
+    "method": "peakchpimck",
+    "kind": "dto",
+    "type_ids": [
+     805
+    ],
+    "classes": [
+     "hfenblpnihn"
+    ]
+   }
+  },
+  "13/6": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "handitem/drop",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "handitem/drop"
+    ],
+    "method": "cnmkfjogeia",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "13/7": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "lfnjkiffphn"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "handitem/set_dist",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "handitem/set_dist"
+    ],
+    "method": "eemileoigli",
+    "kind": "dto",
+    "type_ids": [
+     158
+    ],
+    "classes": [
+     "pomgbkkdeek"
+    ]
+   }
+  },
+  "14/1": {
+   "measured": {
+    "len": 54,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 158,
+    "class": "lfnjkiffphn"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "fishing/cast_prepare",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "fishing/cast_prepare"
+    ],
+    "method": "nlelnbijaff",
+    "kind": "dto+capture",
+    "type_ids": [
+     158
+    ],
+    "classes": [
+     "pomgbkkdeek"
+    ]
+   }
+  },
+  "14/2": {
+   "measured": {
+    "len": 29,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 800,
+    "class": "dlbahppbdad"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "fishing/cast",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "fishing/cast"
+    ],
+    "method": "lolpdjpldpo",
+    "kind": "dto+capture",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "14/3": {
+   "responses": {
+    "sem": "fishing/fall",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/fall"
+    ],
+    "method": "fooolnnjbao",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "14/4": {
+   "measured": {
+    "len": 325,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 801,
+    "class": "caagocpofin"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "fishing/end",
+    "kind": "dto",
+    "dto": "caagocpofin",
+    "tid": 801,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "fishing/end"
+    ],
+    "method": "lgenplaokio",
+    "kind": "dto+capture",
+    "type_ids": [
+     801
+    ],
+    "classes": [
+     "deocnichdpi"
+    ]
+   }
+  },
+  "14/5": {
+   "measured": {
+    "len": 174,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 800,
+    "class": "dlbahppbdad"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "fishing/keep_fish",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "fishing/keep_fish"
+    ],
+    "method": "ehebgacmaom",
+    "kind": "dto+capture",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "14/6": {
+   "responses": {
+    "sem": "fishing/release_fish",
+    "kind": "dto",
+    "dto": "gnilpafigmn",
+    "tid": 807,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/release_fish"
+    ],
+    "method": "jlihkmpekoo",
+    "kind": "dto+capture",
+    "type_ids": [
+     807
+    ],
+    "classes": [
+     "bnininmemgm"
+    ]
+   }
+  },
+  "14/7": {
+   "responses": {
+    "sem": "fishing/step",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/step"
+    ],
+    "method": "jdmpkfnaaeo",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "14/8": {
+   "responses": {
+    "sem": "fishing/load",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/load"
+    ],
+    "method": "odpoajipkak",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "14/9": {
+   "responses": {
+    "sem": "fishing/pull",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/pull"
+    ],
+    "method": "ekjmbihegpn",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "14/10": {
+   "responses": {
+    "sem": "fishing/gen",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/gen"
+    ],
+    "method": "eecdnhjpiek",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "14/11": {
+   "responses": {
+    "sem": "fishing/hooked",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/hooked"
+    ],
+    "method": "jmeldjdboln",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "14/12": {
+   "responses": {
+    "sem": "fishing/left",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "fishing/left"
+    ],
+    "method": "efhpjiloomi",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "14/14": {
+   "contract": {
+    "names": [
+     "push:fishing"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "14/15": {
+   "contract": {
+    "names": [
+     "push:fishing"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "15/1": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "lure/set_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "lure/set_comp"
+    ],
+    "method": "hbckkobipmd",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "15/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "lure/remove_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "lure/remove_comp"
+    ],
+    "method": "aamdiodmgfn",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "16/1": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "reel/set_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "reel/set_comp"
+    ],
+    "method": "nkllkgkjjif",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "16/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "reel/remove_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "reel/remove_comp"
+    ],
+    "method": "dljnghibgha",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/1": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/set_rig",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/set_rig"
+    ],
+    "method": "mdgbnmjlnih",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/2": {
+   "measured": {
+    "len": 460,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 800,
+    "class": "dlbahppbdad"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "rod/set_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/set_comp"
+    ],
+    "method": "ebbolfflfpa",
+    "kind": "dto+capture",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/3": {
+   "responses": {
+    "sem": "rod/remove_comp",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "rod/remove_comp"
+    ],
+    "method": "nieneobeobo",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/remove_all",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/remove_all"
+    ],
+    "method": "clollopepao",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/5": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/set_quivertip",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/set_quivertip"
+    ],
+    "method": "ligapekkdgg",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/6": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/set_baitmount",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/set_baitmount"
+    ],
+    "method": "fonpklinjbl",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/7": {
+   "responses": {
+    "sem": "rod/take",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "rod/take"
+    ],
+    "method": "ndnnnhfedcc",
+    "kind": "dto+capture",
+    "type_ids": [
+     158
+    ],
+    "classes": [
+     "pomgbkkdeek"
+    ]
+   }
+  },
+  "17/8": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/put",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/put"
+    ],
+    "method": "nnmnjfndmgl",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "17/9": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/break",
+    "kind": "dto",
+    "dto": "ikmdmfoojfg",
+    "tid": 11028,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/break"
+    ],
+    "method": "hikfdalijmn",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "afaglefjfpn"
+    ]
+   }
+  },
+  "17/10": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/cutline",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/cutline"
+    ],
+    "method": "pimlkbpihof",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/11": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "plcfmnfjkad"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "17/12": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/set_depth",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/set_depth"
+    ],
+    "method": "ilfbbmgbepk",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "17/13": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "rod/set_clip",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "rod/set_clip"
+    ],
+    "method": "ogcjeigfifa",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "17/14": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "nkdogpdbdnj"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "17/15": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "agpegbobodn"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "18/1": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "gdcbbkhjphh"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "18/2": {
+   "kinds": {
+    "kind": "none",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "ggihpcopckf"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "19/1": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/send_message",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "mailbox/send_message"
+    ],
+    "method": "dehdjiibdnf",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "19/2": {
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/send_item",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "mailbox/send_item"
+    ],
+    "method": "banlidnkckp",
+    "kind": "dto",
+    "type_ids": [
+     132
+    ],
+    "classes": [
+     "onobdmohahp"
+    ]
+   }
+  },
+  "19/3": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/accept_items",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "mailbox/accept_items"
+    ],
+    "method": "pfoibhhfcng",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "19/4": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/accept_all_items",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "mailbox/accept_all_items"
+    ],
+    "method": "gekddleommn",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "19/5": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "pbndmldbfai"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/info",
+    "kind": "dto",
+    "dto": "pbndmldbfai",
+    "tid": 133,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "mailbox/info"
+    ],
+    "method": "pmmgcdcleci",
+    "kind": "dto",
+    "type_ids": [
+     133
+    ],
+    "classes": [
+     "nicjmgdnood"
+    ]
+   }
+  },
+  "19/6": {
+   "measured": {
+    "len": 12,
+    "tailLeft": 0,
+    "kind": "guidarr",
+    "n": 0
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "mailbox/list",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "mailbox/list"
+    ],
+    "method": "ajebhfdkcmd",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "Guid"
+    ]
+   }
+  },
+  "19/7": {
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/get",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "mailbox/get"
+    ],
+    "method": "ognbkgpmapg",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "MailboxItemMeta"
+    ]
+   }
+  },
+  "19/8": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/remove",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "mailbox/remove"
+    ],
+    "method": "hcjmhfilfga",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "19/9": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "mailbox/remove_all",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "mailbox/remove_all"
+    ],
+    "method": "fhhhgfdlnia",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "19/10": {
+   "contract": {
+    "names": [
+     "push:mailbox"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "20/1": {
+   "measured": {
+    "len": 46,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "111",
+    "n": 1
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "market/rate",
+    "kind": "dto",
+    "dto": "jpmlmnfkbfn",
+    "tid": 302,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "market/rate"
+    ],
+    "method": "icgpbcdgfne",
+    "kind": "dto+capture",
+    "type_ids": [
+     302
+    ],
+    "classes": [
+     "bjhalanbked"
+    ]
+   }
+  },
+  "20/2": {
+   "measured": {
+    "len": 46,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "112",
+    "n": 1
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "market/sell",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "market/sell"
+    ],
+    "method": "adfglcdgjaj",
+    "kind": "dto+capture",
+    "type_ids": [
+     303
+    ],
+    "classes": [
+     "hhkmahplcpj"
+    ]
+   }
+  },
+  "20/3": {
+   "measured": {
+    "len": 787,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "110",
+    "n": 10
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "market/get_offers",
+    "kind": "dto",
+    "dto": "jbfajcjlfek",
+    "tid": 301,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "market/get_offers"
+    ],
+    "method": "cpdcjkfohio",
+    "kind": "dto+capture",
+    "type_ids": [
+     301
+    ],
+    "classes": [
+     "apflmkhkbil"
+    ]
+   }
+  },
+  "20/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "imhmlbejglk"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "market/sell_offer",
+    "kind": "dto",
+    "dto": "imhmlbejglk",
+    "tid": 300,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "market/sell_offer"
+    ],
+    "method": "ggopjkgknin",
+    "kind": "dto",
+    "type_ids": [
+     300
+    ],
+    "classes": [
+     "nkppcppknfe"
+    ]
+   }
+  },
+  "21/1": {
+   "measured": {
+    "len": 532,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "144",
+    "n": 11
+   },
+   "src": "measured",
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "responses": {
+    "sem": "workshop/list",
+    "kind": "dto",
+    "dto": "ookkpknacja",
+    "tid": 505,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "workshop/list"
+    ],
+    "method": "dmodfpliedo",
+    "kind": "dto+capture",
+    "type_ids": [
+     505
+    ],
+    "classes": [
+     "keialdedcnp"
+    ]
+   }
+  },
+  "21/2": {
+   "measured": {
+    "len": 346,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 503,
+    "class": "mgjeoebmghh"
+   },
+   "src": "measured",
+   "kinds": {
+    "kind": "dto",
+    "dto": "mgjeoebmghh"
+   },
+   "responses": {
+    "sem": "workshop/diag",
+    "kind": "dto",
+    "dto": "mgjeoebmghh",
+    "tid": 503,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "workshop/diag"
+    ],
+    "method": "cepmjagpndj",
+    "kind": "dto+capture",
+    "type_ids": [
+     503
+    ],
+    "classes": [
+     "fcpoceohlbj"
+    ]
+   }
+  },
+  "21/3": {
+   "measured": {
+    "len": 398,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 157,
+    "class": "cnolibojkao"
+   },
+   "src": "measured",
+   "kinds": {
+    "kind": "dto",
+    "dto": "oafalmjejhh"
+   },
+   "contract": {
+    "names": [
+     "kgcnkjfooad"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     132
+    ],
+    "classes": [
+     "onobdmohahp"
+    ]
+   }
+  },
+  "21/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "oafalmjejhh"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "workshop/repair_w_gold",
+    "kind": "dto",
+    "dto": "oafalmjejhh",
+    "tid": 132,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "workshop/repair_w_gold",
+     "okccjmnfola"
+    ],
+    "method": "okccjmnfola",
+    "kind": "dto",
+    "type_ids": [
+     132
+    ],
+    "classes": [
+     "onobdmohahp"
+    ]
+   }
+  },
+  "21/5": {
+   "measured": {
+    "len": 16,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "145",
+    "n": 0
+   },
+   "src": "measured",
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "responses": {
+    "sem": "workshop/redeem",
+    "kind": "dto",
+    "dto": "dcfbndockbl",
+    "tid": 506,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "workshop/redeem"
+    ],
+    "method": "nlhhhobjbnh",
+    "kind": "dto",
+    "type_ids": [
+     506
+    ],
+    "classes": [
+     "npioohneipn"
+    ]
+   }
+  },
+  "22/1": {
+   "measured": {
+    "len": 60,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "140",
+    "n": 1
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "store/list",
+    "kind": "dto",
+    "dto": "ifdefblccde",
+    "tid": 501,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "store/list"
+    ],
+    "method": "fjjabmdihhh",
+    "kind": "dto+capture",
+    "type_ids": [
+     501
+    ],
+    "classes": [
+     "bkcgemhagon"
+    ]
+   }
+  },
+  "22/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "store/return",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "store/return"
+    ],
+    "method": "okliaidmmdk",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "22/5": {
+   "measured": {
+    "len": 16,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "149",
+    "n": 0
+   },
+   "src": "measured",
+   "contract": {
+    "names": [
+     "mnlockndaen"
+    ],
+    "method": "",
+    "kind": "dto+capture",
+    "type_ids": [
+     560
+    ],
+    "classes": [
+     "niojbdbpfld"
+    ]
+   }
+  },
+  "22/6": {
+   "contract": {
+    "names": [
+     "ecekphdacgm"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "bool"
+    ]
+   },
+   "src": "contract"
+  },
+  "23/1": {
+   "measured": {
+    "len": 16,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "147",
+    "n": 0
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "storereal/list",
+    "kind": "dto",
+    "dto": "gbnhfllijoh",
+    "tid": 550,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "storereal/list"
+    ],
+    "method": "dlhiombdacc",
+    "kind": "dto+capture",
+    "type_ids": [
+     550
+    ],
+    "classes": [
+     "moljjhgbpjg"
+    ]
+   }
+  },
+  "23/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "oafalmjejhh"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "storereal/steam_pay_begin",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "storereal/steam_pay_begin"
+    ],
+    "method": "pmniomcjgbc",
+    "kind": "dto",
+    "type_ids": [
+     132
+    ],
+    "classes": [
+     "onobdmohahp"
+    ]
+   }
+  },
+  "23/3": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "storereal/steam_pay_finish",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "storereal/steam_pay_finish"
+    ],
+    "method": "mfcbhpgnjce",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "23/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "oafalmjejhh"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "ahkjfichkhi"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     132
+    ],
+    "classes": [
+     "onobdmohahp"
+    ]
+   }
+  },
+  "23/5": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "idpnmfegpnj"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/1": {
+   "responses": {
+    "sem": "social/move",
+    "kind": "dto",
+    "dto": "godhiicbgng",
+    "tid": 402,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "social/move"
+    ],
+    "method": "cfkheabclha",
+    "kind": "dto+capture",
+    "type_ids": [
+     402
+    ],
+    "classes": [
+     "ancileefnje"
+    ]
+   }
+  },
+  "24/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "godhiicbgng"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/auto",
+    "kind": "dto",
+    "dto": "godhiicbgng",
+    "tid": 402,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/auto"
+    ],
+    "method": "gimhpledapb",
+    "kind": "dto",
+    "type_ids": [
+     402
+    ],
+    "classes": [
+     "ancileefnje"
+    ]
+   }
+  },
+  "24/3": {
+   "measured": {
+    "len": 64,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 402,
+    "class": "godhiicbgng"
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "social/current",
+    "kind": "dto",
+    "dto": "godhiicbgng",
+    "tid": 402,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/current"
+    ],
+    "method": "aoplbnekidd",
+    "kind": "dto",
+    "type_ids": [
+     402
+    ],
+    "classes": [
+     "ancileefnje"
+    ]
+   }
+  },
+  "24/4": {
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/members",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/members"
+    ],
+    "method": "iffidhjejgc",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/5": {
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/chatlist",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/chatlist"
+    ],
+    "method": "mgeehfogldj",
+    "kind": "dto+capture",
+    "type_ids": [
+     402
+    ],
+    "classes": [
+     "ancileefnje"
+    ]
+   }
+  },
+  "24/6": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "godhiicbgng"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/create",
+    "kind": "dto",
+    "dto": "godhiicbgng",
+    "tid": 402,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/create"
+    ],
+    "method": "kjnflnijooh",
+    "kind": "dto",
+    "type_ids": [
+     402
+    ],
+    "classes": [
+     "ancileefnje"
+    ]
+   }
+  },
+  "24/7": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "godhiicbgng"
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/join",
+    "kind": "dto",
+    "dto": "godhiicbgng",
+    "tid": 402,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/join"
+    ],
+    "method": "bdnkimadnde",
+    "kind": "dto",
+    "type_ids": [
+     402
+    ],
+    "classes": [
+     "ancileefnje"
+    ]
+   }
+  },
+  "24/8": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "gffmgkaheho"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/9": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "idmplnggaoe"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/10": {
+   "responses": {
+    "sem": "social/public",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "src": "responses",
+   "contract": {
+    "names": [
+     "social/public"
+    ],
+    "method": "elbamjdlgfj",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   }
+  },
+  "24/11": {
+   "kinds": {
+    "kind": "args",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/find",
+    "kind": "dto",
+    "dto": "dgbmlekfpbg",
+    "tid": 2002,
+    "array": true
+   },
+   "contract": {
+    "names": [
+     "social/find"
+    ],
+    "method": "ofamhgnkfjf",
+    "kind": "dto",
+    "type_ids": [
+     2002
+    ],
+    "classes": [
+     "ifbfdldbana"
+    ]
+   }
+  },
+  "24/12": {
+   "measured": {
+    "len": 16,
+    "tailLeft": 0,
+    "kind": "args",
+    "code": "524",
+    "n": 0
+   },
+   "src": "measured",
+   "responses": {
+    "sem": "social/bl_get",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/bl_get"
+    ],
+    "method": "ilgcaehdopi",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/13": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/bl_add",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/bl_add"
+    ],
+    "method": "genpiaiejan",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/14": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/bl_remove",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/bl_remove"
+    ],
+    "method": "eainkcedebh",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/15": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "responses": {
+    "sem": "social/abuse_report",
+    "kind": "null",
+    "dto": null,
+    "tid": null,
+    "array": false
+   },
+   "contract": {
+    "names": [
+     "social/abuse_report"
+    ],
+    "method": "hbgibpfclen",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/16": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "llhgklogeal"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "object"
+    ]
+   }
+  },
+  "24/19": {
+   "measured": {
+    "len": 54,
+    "tailLeft": 0,
+    "kind": "bytes"
+   },
+   "src": "measured",
+   "contract": {
+    "names": [
+     "aldippapbgm"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "byte"
+    ]
+   }
+  },
+  "24/22": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "hpfcdbidace"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "hhfaoacdccj"
+    ]
+   }
+  },
+  "24/27": {
+   "contract": {
+    "names": [
+     "push:social"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "24/28": {
+   "contract": {
+    "names": [
+     "push:social"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "24/29": {
+   "contract": {
+    "names": [
+     "push:social"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "24/30": {
+   "contract": {
+    "names": [
+     "push:social"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "24/31": {
+   "contract": {
+    "names": [
+     "push:social"
+    ],
+    "method": "",
+    "kind": "",
+    "type_ids": [],
+    "classes": []
+   },
+   "src": "contract"
+  },
+  "25/1": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "cofdmbfkifc"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "25/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "kdeehdffopf"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "25/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "cjnikngcmoa"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "25/5": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "papgofahdbi"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "25/6": {
+   "kinds": {
+    "kind": "long",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "nkkdnfdopcf"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "long"
+    ]
+   }
+  },
+  "27/1": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "igchdonlnmf"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "27/2": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "alpciclpmnn"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "27/3": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "dlbahppbdad"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "hlmjcnikdpl"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     800
+    ],
+    "classes": [
+     "pcnefbpgdhl"
+    ]
+   }
+  },
+  "27/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "gglppphenoi"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "lkokodffmln"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     809
+    ],
+    "classes": [
+     "llgjfoldbcc"
+    ]
+   }
+  },
+  "28/1": {
+   "measured": {
+    "len": 9825,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 5011,
+    "class": "acjaheimjge"
+   },
+   "src": "measured",
+   "contract": {
+    "names": [
+     "onakiajohnl"
+    ],
+    "method": "",
+    "kind": "dto+capture",
+    "type_ids": [
+     5011
+    ],
+    "classes": [
+     "epojpghapac"
+    ]
+   }
+  },
+  "28/2": {
+   "measured": {
+    "len": 40,
+    "tailLeft": 0,
+    "kind": "obj",
+    "typeId": 5003,
+    "class": "fopkeoppndn"
+   },
+   "src": "measured",
+   "contract": {
+    "names": [
+     "bcdgljngnnp"
+    ],
+    "method": "",
+    "kind": "dto+capture",
+    "type_ids": [
+     5003
+    ],
+    "classes": [
+     "mkooaaknoee"
+    ]
+   }
+  },
+  "28/4": {
+   "kinds": {
+    "kind": "dto",
+    "dto": "bdjfgoccgle"
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "paannkpolaj"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [
+     808
+    ],
+    "classes": [
+     "oehmgkkadla"
+    ]
+   }
+  },
+  "29/1": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "odjalmiooem"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "cjjndkdbmfo"
+    ]
+   }
+  },
+  "29/2": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "emfeehnapcp"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "cjjndkdbmfo"
+    ]
+   }
+  },
+  "29/3": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "ngaiioafkmp"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "illcccioffd"
+    ]
+   }
+  },
+  "29/4": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "ajjiceiilol"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "illcccioffd"
+    ]
+   }
+  },
+  "29/5": {
+   "kinds": {
+    "kind": "null",
+    "dto": null
+   },
+   "src": "kinds",
+   "contract": {
+    "names": [
+     "lehjbiajoff"
+    ],
+    "method": "",
+    "kind": "dto",
+    "type_ids": [],
+    "classes": [
+     "illcccioffd"
+    ]
+   }
+  }
+ },
+ "conflicts": [
+  {
+   "key": "21/3",
+   "mine": 157,
+   "theirs": [
+    132
+   ],
+   "note": "真服实得的 type_id 不在他家白名单里，按真服为准"
+  }
+ ],
+ "argcode": {
+  "byElem": {
+   "1": "3",
+   "3": "5",
+   "25": "61",
+   "26": "27",
+   "27": "524",
+   "100": "61",
+   "101": "61",
+   "111": "31",
+   "114": "61",
+   "115": "61",
+   "116": "61",
+   "118": "61",
+   "124": "61",
+   "128": "61",
+   "131": "61",
+   "136": "65",
+   "137": "61",
+   "140": "61",
+   "141": "61",
+   "143": "61",
+   "149": "61",
+   "152": "81",
+   "157": "61",
+   "161": "61",
+   "164": "61",
+   "201": "98",
+   "204": "101",
+   "301": "110",
+   "302": "111",
+   "303": "112",
+   "305": "114",
+   "306": "524",
+   "307": "524",
+   "308": "524",
+   "311": "524",
+   "312": "121",
+   "313": "122",
+   "316": "125",
+   "317": "126",
+   "319": "128",
+   "320": "129",
+   "323": "132",
+   "324": "524",
+   "400": "135",
+   "401": "524",
+   "402": "137",
+   "501": "140",
+   "504": "143",
+   "505": "144",
+   "507": "146",
+   "550": "147",
+   "560": "149",
+   "811": "173",
+   "813": "174",
+   "5007": "204",
+   "5008": "205",
+   "5009": "206",
+   "5013": "210",
+   "5019": "216"
+  },
+  "byCmd": {
+   "2/1": "524",
+   "2/2": "524",
+   "2/3": "524",
+   "2/6": "524",
+   "2/8": "114",
+   "2/9": "524",
+   "2/11": "524",
+   "3/3": "114",
+   "3/16": "185",
+   "3/17": "132",
+   "3/18": "189",
+   "3/41": "61",
+   "4/5": "61",
+   "4/20": "61",
+   "4/21": "524",
+   "4/22": "61",
+   "6/1": "3",
+   "9/5": "97",
+   "11/1": "65",
+   "14/14": "524",
+   "20/1": "111",
+   "20/2": "112",
+   "20/3": "110",
+   "21/1": "144",
+   "21/5": "145",
+   "22/1": "140",
+   "22/5": "149",
+   "23/1": "147",
+   "24/5": "137",
+   "24/26": "522",
+   "24/27": "524"
+  },
+  "byTypeId": {
+   "1": "3",
+   "2": "4",
+   "3": "5",
+   "4": "6",
+   "5": "7",
+   "6": "8",
+   "7": "9",
+   "8": "10",
+   "9": "11",
+   "11": "12",
+   "12": "13",
+   "13": "14",
+   "14": "15",
+   "15": "16",
+   "16": "17",
+   "17": "18",
+   "18": "19",
+   "19": "20",
+   "20": "21",
+   "21": "22",
+   "22": "23",
+   "23": "24",
+   "24": "25",
+   "25": "26",
+   "26": "27",
+   "27": "28",
+   "100": "29",
+   "101": "30",
+   "102": "31",
+   "103": "32",
+   "104": "33",
+   "105": "34",
+   "106": "35",
+   "107": "36",
+   "108": "37",
+   "109": "38",
+   "110": "39",
+   "111": "40",
+   "112": "41",
+   "113": "42",
+   "114": "43",
+   "115": "44",
+   "116": "45",
+   "117": "46",
+   "118": "47",
+   "119": "48",
+   "120": "49",
+   "121": "50",
+   "122": "51",
+   "123": "52",
+   "124": "53",
+   "125": "54",
+   "126": "55",
+   "127": "56",
+   "128": "57",
+   "129": "58",
+   "130": "59",
+   "131": "60",
+   "132": "61",
+   "133": "62",
+   "134": "63",
+   "135": "64",
+   "136": "65",
+   "137": "66",
+   "138": "67",
+   "139": "68",
+   "140": "69",
+   "141": "70",
+   "142": "71",
+   "143": "72",
+   "144": "73",
+   "145": "74",
+   "146": "75",
+   "147": "76",
+   "148": "77",
+   "149": "78",
+   "150": "79",
+   "151": "80",
+   "152": "81",
+   "153": "82",
+   "155": "83",
+   "156": "84",
+   "157": "85",
+   "158": "86",
+   "159": "87",
+   "160": "88",
+   "161": "89",
+   "162": "90",
+   "163": "91",
+   "164": "92",
+   "165": "93",
+   "166": "94",
+   "167": "95",
+   "170": "96",
+   "171": "97",
+   "201": "98",
+   "202": "99",
+   "203": "100",
+   "204": "101",
+   "205": "102",
+   "206": "103",
+   "207": "104",
+   "208": "105",
+   "209": "106",
+   "210": "107",
+   "211": "108",
+   "300": "109",
+   "301": "110",
+   "302": "111",
+   "303": "112",
+   "304": "113",
+   "305": "114",
+   "306": "115",
+   "307": "116",
+   "308": "117",
+   "309": "118",
+   "310": "119",
+   "311": "120",
+   "312": "121",
+   "313": "122",
+   "314": "123",
+   "315": "124",
+   "316": "125",
+   "317": "126",
+   "318": "127",
+   "319": "128",
+   "320": "129",
+   "321": "130",
+   "322": "131",
+   "323": "132",
+   "324": "133",
+   "325": "134",
+   "400": "135",
+   "401": "136",
+   "402": "137",
+   "403": "138",
+   "500": "139",
+   "501": "140",
+   "502": "141",
+   "503": "142",
+   "504": "143",
+   "505": "144",
+   "506": "145",
+   "507": "146",
+   "550": "147",
+   "551": "148",
+   "560": "149",
+   "600": "150",
+   "610": "151",
+   "611": "152",
+   "612": "153",
+   "613": "154",
+   "614": "155",
+   "615": "156",
+   "616": "157",
+   "700": "158",
+   "721": "159",
+   "744": "160",
+   "745": "161",
+   "800": "162",
+   "801": "163",
+   "802": "164",
+   "803": "165",
+   "804": "166",
+   "805": "167",
+   "806": "168",
+   "807": "169",
+   "808": "170",
+   "809": "171",
+   "810": "172",
+   "811": "173",
+   "812": "174",
+   "813": "175",
+   "1100": "176",
+   "1101": "177",
+   "1131": "178",
+   "1470": "179",
+   "1505": "180",
+   "1506": "181",
+   "2000": "182",
+   "2002": "183",
+   "2003": "184",
+   "2015": "185",
+   "2016": "186",
+   "2501": "187",
+   "2502": "188",
+   "3005": "189",
+   "3006": "190",
+   "3100": "191",
+   "3101": "192",
+   "3103": "193",
+   "3200": "194",
+   "3201": "195",
+   "4000": "196",
+   "5000": "197",
+   "5001": "198",
+   "5002": "199",
+   "5003": "200",
+   "5004": "201",
+   "5005": "202",
+   "5006": "203",
+   "5007": "204",
+   "5008": "205",
+   "5009": "206",
+   "5010": "207",
+   "5011": "208",
+   "5012": "209",
+   "5013": "210",
+   "5014": "211",
+   "5015": "212",
+   "5016": "213",
+   "5017": "214",
+   "5018": "215",
+   "5019": "216",
+   "7600": "217",
+   "7601": "218",
+   "10000": "219",
+   "10001": "220",
+   "10002": "221",
+   "10004": "222",
+   "10005": "223",
+   "10006": "224",
+   "10100": "225",
+   "10101": "226",
+   "10200": "227",
+   "10201": "228",
+   "10203": "229",
+   "10204": "230",
+   "10205": "231",
+   "10206": "232",
+   "10207": "233",
+   "10208": "234",
+   "10209": "235",
+   "10210": "236",
+   "10300": "237",
+   "10301": "238",
+   "10302": "239",
+   "10303": "240",
+   "10304": "241",
+   "10305": "242",
+   "10306": "243",
+   "10307": "244",
+   "11000": "245",
+   "11001": "246",
+   "11002": "247",
+   "11003": "248",
+   "11004": "249",
+   "11005": "250",
+   "11006": "251",
+   "11007": "252",
+   "11008": "253",
+   "11009": "254",
+   "11010": "255",
+   "11011": "256",
+   "11012": "257",
+   "11013": "258",
+   "11014": "259",
+   "11015": "260",
+   "11016": "261",
+   "11017": "262",
+   "11018": "263",
+   "11019": "264",
+   "11020": "265",
+   "11021": "266",
+   "11022": "267",
+   "11023": "268",
+   "11024": "269",
+   "11025": "270",
+   "11026": "271",
+   "11027": "272",
+   "11028": "273",
+   "11029": "274",
+   "11030": "275",
+   "11031": "276",
+   "11032": "277",
+   "11033": "278",
+   "11034": "279",
+   "11035": "280",
+   "11036": "281",
+   "11037": "282",
+   "11038": "283",
+   "11039": "284",
+   "11040": "285",
+   "11041": "286",
+   "11042": "287",
+   "11043": "288",
+   "11044": "289",
+   "11045": "290",
+   "11046": "291",
+   "11047": "292",
+   "11048": "293",
+   "11049": "294",
+   "11050": "295",
+   "11051": "296",
+   "11052": "297",
+   "11053": "298",
+   "11054": "299",
+   "11055": "300",
+   "11056": "301",
+   "11057": "302",
+   "11058": "303",
+   "11059": "304",
+   "11060": "305",
+   "11061": "306",
+   "11062": "307",
+   "11063": "308",
+   "11064": "309",
+   "11065": "310",
+   "11066": "311",
+   "11067": "312",
+   "11068": "313",
+   "11069": "314",
+   "11070": "315",
+   "11071": "316",
+   "11072": "317",
+   "11073": "318",
+   "11074": "319",
+   "11075": "320",
+   "11076": "321",
+   "11077": "322",
+   "11078": "323",
+   "11079": "324",
+   "11080": "325",
+   "11081": "326",
+   "11082": "327",
+   "11083": "328",
+   "11084": "329",
+   "11085": "330",
+   "11086": "331",
+   "11087": "332",
+   "11088": "333",
+   "11089": "334",
+   "11090": "335",
+   "11091": "336",
+   "11092": "337",
+   "11093": "338",
+   "11094": "339",
+   "11095": "340",
+   "11096": "341",
+   "11097": "342",
+   "11098": "343",
+   "11099": "344",
+   "11100": "345",
+   "11101": "346",
+   "11102": "347",
+   "11103": "348",
+   "11104": "349",
+   "11105": "350",
+   "11106": "351",
+   "11107": "352",
+   "11108": "353",
+   "11110": "354",
+   "11111": "355",
+   "11112": "356",
+   "11131": "357",
+   "11132": "358",
+   "11264": "359",
+   "11266": "360",
+   "11267": "361",
+   "11300": "362",
+   "11301": "363",
+   "11303": "364",
+   "11304": "365",
+   "11325": "366",
+   "11326": "367",
+   "11500": "368",
+   "11501": "369",
+   "11502": "370",
+   "11503": "371",
+   "11504": "372",
+   "11900": "373",
+   "12000": "374",
+   "12001": "375",
+   "12002": "376",
+   "12003": "377",
+   "12004": "378",
+   "12005": "379",
+   "12006": "380",
+   "12007": "381",
+   "12008": "382",
+   "12009": "383",
+   "12010": "384",
+   "12011": "385",
+   "12012": "386",
+   "12013": "387",
+   "12014": "388",
+   "12015": "389",
+   "12016": "390",
+   "12017": "391",
+   "12018": "392",
+   "12019": "393",
+   "12020": "394",
+   "12021": "395",
+   "12022": "396",
+   "12023": "397",
+   "12024": "398",
+   "12025": "399",
+   "12026": "400",
+   "12027": "401",
+   "12028": "402",
+   "12029": "403",
+   "12030": "404",
+   "12031": "405",
+   "12032": "406",
+   "12033": "407",
+   "12034": "408",
+   "12035": "409",
+   "12036": "410",
+   "12037": "411",
+   "12038": "412",
+   "12039": "413",
+   "12040": "414",
+   "12041": "415",
+   "12042": "416",
+   "12043": "417",
+   "12044": "418",
+   "12045": "419",
+   "12046": "420",
+   "12047": "421",
+   "12048": "422",
+   "12049": "423",
+   "12050": "424",
+   "12051": "425",
+   "12052": "426",
+   "12053": "427",
+   "12054": "428",
+   "12055": "429",
+   "12056": "430",
+   "12057": "431",
+   "12058": "432",
+   "12059": "433",
+   "12071": "434",
+   "12120": "435",
+   "12121": "436",
+   "12500": "437",
+   "12501": "438",
+   "12502": "439",
+   "12503": "440",
+   "12504": "441",
+   "12505": "442",
+   "12506": "443",
+   "12507": "444",
+   "12508": "445",
+   "12509": "446",
+   "12510": "447",
+   "12511": "448",
+   "12600": "449",
+   "12601": "450",
+   "12602": "451",
+   "12603": "452",
+   "12604": "453",
+   "12605": "454",
+   "12606": "455",
+   "12610": "456",
+   "12611": "457",
+   "12700": "458",
+   "12701": "459",
+   "12702": "460",
+   "12703": "461",
+   "12800": "462",
+   "12801": "463",
+   "12802": "464",
+   "12803": "465",
+   "12804": "466",
+   "12805": "467",
+   "12806": "468",
+   "12999": "469",
+   "13000": "470",
+   "13001": "471",
+   "13002": "472",
+   "13010": "473",
+   "13011": "474",
+   "13015": "475",
+   "13016": "476",
+   "13017": "477",
+   "13018": "478",
+   "13020": "479",
+   "13021": "480",
+   "13022": "481",
+   "13030": "482",
+   "13031": "483",
+   "13037": "484",
+   "13040": "485",
+   "13041": "486",
+   "13300": "487",
+   "13301": "488",
+   "14000": "489",
+   "14001": "490",
+   "14002": "491",
+   "14003": "492",
+   "14004": "493",
+   "15000": "494",
+   "15001": "495",
+   "15003": "496",
+   "15004": "497",
+   "15005": "498",
+   "17170": "499",
+   "17171": "500",
+   "17172": "501",
+   "17173": "502",
+   "17497": "503",
+   "17509": "504",
+   "17510": "505",
+   "21000": "506",
+   "21001": "507",
+   "25000": "508",
+   "29000": "509",
+   "98765": "510",
+   "120330": "511",
+   "-3": "0",
+   "-2": "1",
+   "-1": "2"
+  }
+ }
+}
