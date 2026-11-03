@@ -18,6 +18,8 @@ type ReelPerformance struct {
 	OilItemID      string
 	OilQuality     float64
 	OilWearFactor  float64
+	CastFriction   float64
+	CastEfficiency float64
 	WearProgress   float64
 	UpdatedTS      float64
 }
@@ -31,8 +33,9 @@ func (d *DB) UpsertReelPerformance(ctx context.Context, v ReelPerformance) error
 		INSERT INTO reel_performance(
 			reel_guid, uid, base_drag_kg, locked_drag_kg, durability,
 			bearing_item_id, bearing_quality, bearing_factor,
-			oil_item_id, oil_quality, oil_wear_factor, wear_progress, updated_ts
-		) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+			oil_item_id, oil_quality, oil_wear_factor,
+			cast_friction, cast_efficiency, wear_progress, updated_ts
+		) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(reel_guid) DO UPDATE SET
 			uid=excluded.uid,
 			base_drag_kg=excluded.base_drag_kg,
@@ -44,11 +47,14 @@ func (d *DB) UpsertReelPerformance(ctx context.Context, v ReelPerformance) error
 			oil_item_id=excluded.oil_item_id,
 			oil_quality=excluded.oil_quality,
 			oil_wear_factor=excluded.oil_wear_factor,
+			cast_friction=excluded.cast_friction,
+			cast_efficiency=excluded.cast_efficiency,
 			wear_progress=excluded.wear_progress,
 			updated_ts=excluded.updated_ts`,
 		v.ReelGUID, v.UID, v.BaseDragKg, v.LockedDragKg, v.Durability,
 		v.BearingItemID, v.BearingQuality, v.BearingFactor,
-		v.OilItemID, v.OilQuality, v.OilWearFactor, v.WearProgress, v.UpdatedTS)
+		v.OilItemID, v.OilQuality, v.OilWearFactor,
+		v.CastFriction, v.CastEfficiency, v.WearProgress, v.UpdatedTS)
 	return err
 }
 
@@ -58,11 +64,13 @@ func (d *DB) GetReelPerformance(ctx context.Context, reelGUID string) (*ReelPerf
 	err := d.SQL.QueryRowContext(ctx, `
 		SELECT reel_guid, uid, base_drag_kg, locked_drag_kg, durability,
 		       bearing_item_id, bearing_quality, bearing_factor,
-		       oil_item_id, oil_quality, oil_wear_factor, wear_progress, updated_ts
+		       oil_item_id, oil_quality, oil_wear_factor,
+		       cast_friction, cast_efficiency, wear_progress, updated_ts
 		FROM reel_performance WHERE reel_guid=?`, reelGUID).Scan(
 		&v.ReelGUID, &v.UID, &v.BaseDragKg, &v.LockedDragKg, &v.Durability,
 		&v.BearingItemID, &v.BearingQuality, &v.BearingFactor,
-		&v.OilItemID, &v.OilQuality, &v.OilWearFactor, &v.WearProgress, &v.UpdatedTS)
+		&v.OilItemID, &v.OilQuality, &v.OilWearFactor,
+		&v.CastFriction, &v.CastEfficiency, &v.WearProgress, &v.UpdatedTS)
 	if err != nil {
 		return nil, err
 	}

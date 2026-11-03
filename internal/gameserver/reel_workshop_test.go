@@ -137,6 +137,88 @@ func TestWorkshopOrderRefreshesDragVersionAndPerformance(t *testing.T) {
 		perf.OilItemID != "ef_reel_oil" || perf.OilQuality != 15 {
 		t.Fatalf("轴承/润滑油参数未写入物理表: %+v", perf)
 	}
+	if math.Abs(perf.CastFriction-reelCastFriction(10, 15, 1)) > 1e-9 ||
+		math.Abs(perf.CastEfficiency-(1-perf.CastFriction)) > 1e-9 {
+		t.Fatalf("轮子抛投摩擦参数未随工坊零件刷新: %+v", perf)
+	}
+}
+
+func TestReelWorkshopStatsSurviveRelogTreeBuild(t *testing.T) {
+	srv, db := newRigTestServer(t)
+	ctx := context.Background()
+	const uid = int64(1000001)
+	if err := srv.EnsurePlayer(ctx, uid); err != nil {
+		t.Fatal(err)
+	}
+	p, _ := db.EnsureProfile(ctx, uid)
+	if err := db.UpdateBalance(ctx, uid, 1_000_000, p.Gold, p.Bank); err != nil {
+		t.Fatal(err)
+	}
+	reel, err := srv.CreateItem(ctx, uid, "spin_5354", "backpack", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	orders := proto.Args(proto.S("503"),
+		wiregen.MustMakeObj("gcllbdkgkna", map[int]*proto.Value{
+			0: proto.U32(9), 1: proto.StrVal("ef-fb-sp.orig-5805"),
+		}),
+		wiregen.MustMakeObj("gcllbdkgkna", map[int]*proto.Value{
+			0: proto.U32(52), 1: proto.StrVal("rgm_zmn_jet_jsg-r"),
+		}),
+	)
+	req := proto.Args524(
+		proto.StrVal("workshop_01"),
+		wiregen.MustMakeObj("nfmkdcbnkhp", map[int]*proto.Value{
+			0: proto.Guid(reel.GUID),
+			1: orders,
+			2: proto.U32(0),
+			3: proto.U64(100),
+		}),
+	)
+	sess := newProbeSess(srv)
+	hctx := &Ctx{Sess: sess, Main: 21, Sub: 3, Tree: req, DecodeOK: true,
+		ExpectResponse: true, Log: logging.Discard()}
+	if body, ok := hWorkshopOrder(hctx); !ok || len(body) == 0 {
+		t.Fatal("21/3 更换摩擦片和齿轮失败")
+	}
+
+	fresh, err := db.GetItemByGUID(ctx, reel.GUID)
+	if err != nil || fresh == nil {
+		t.Fatalf("重新读取轮子失败: %v", err)
+	}
+	// 模拟下线再上线时重新构造 4/5 和 157 使用的物品树。
+	tree, err := srv.ItemToTree(ctx, fresh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	si := fieldIdxByCS(tree.Class, csStrength)
+	if si < 0 || si >= tree.FieldCount() || tree.Fields[si].Num == nil {
+		t.Fatal("轮子树缺少传动比字段")
+	}
+	gotRatio := float64(proto.F32FromBits(uint32(u64Of(tree.Fields[si].Num))))
+	_, gearDef, _, ok := srv.selectedReelPart(ctx, tree.Fields, 52)
+	if !ok || gearDef == nil || gearDef.ItemID != "rgm_zmn_jet_jsg-r" {
+		t.Fatalf("重登后齿轮=%v ok=%v，期望保留JSG-R", gearDef, ok)
+	}
+	wantRatio := itemDefF32(gearDef, gearAttrRatio) * fresh.Workmanship
+	if math.Abs(gotRatio-wantRatio) > 0.001 {
+		t.Fatalf("重登后传动比=%f，期望保留改装值%f", gotRatio, wantRatio)
+	}
+
+	drag, dragDef, _, ok := srv.selectedReelPart(ctx, tree.Fields, 9)
+	if !ok || dragDef == nil || dragDef.ItemID != "ef-fb-sp.orig-5805" {
+		t.Fatalf("重登后摩擦片=%v ok=%v，期望保留5805", dragDef, ok)
+	}
+	di := fieldIdxByCS(drag.Class, csDragForce)
+	if di < 0 || drag.Fields[di].Num == nil {
+		t.Fatal("摩擦片缺少制动力字段")
+	}
+	gotDrag := float64(proto.F32FromBits(uint32(u64Of(drag.Fields[di].Num))))
+	if math.Abs(gotDrag-3.5) > 0.001 {
+		t.Fatalf("重登后摩擦力=%f，期望保留3.5kg", gotDrag)
+	}
+
 }
 
 func TestReelOverloadUsesDurabilityStages(t *testing.T) {

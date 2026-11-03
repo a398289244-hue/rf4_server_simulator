@@ -3,6 +3,7 @@ package gameserver
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"rf4server/internal/proto"
@@ -610,22 +611,8 @@ func hCastPrepare(ctx *Ctx) ([]byte, bool) {
 		st.mu.Unlock()
 	}
 
-	// f2 传递钓深：17/12 的厘米值转换为米写入 158.f2；
-	// 未设置时使用默认抛竿深度。
-	depthBits := castDepthBits
-	if depthCM > 0 {
-		depthBits = proto.F32Bits(float32(depthCM) / 100.0)
-	}
-	// f3 = 线末端钩 guid（槽 12 钩 → 路亚拟饵出厂钩回退）
-	hookGUID := srv.mountedHookGuid(ctx.Sess.pushCtx(), gear)
-	obj := wiregen.MustMakeObj("lfnjkiffphn", map[int]*proto.Value{
-		0: proto.Guid(gear),
-		1: proto.U32(castBaseDistanceBits(rigType)),
-		2: proto.U32(depthBits),
-		3: proto.Guid(hookGUID),
-	})
-	body, err := proto.EncodeValue(obj, ctx.Sess.Table())
-	if err != nil {
+	body := castReady158(ctx, gear, depthCM, rigType)
+	if body == nil {
 		return nil, false
 	}
 	return body, true
@@ -656,12 +643,28 @@ func hCast(ctx *Ctx) ([]byte, bool) {
 	st.mu.Unlock()
 	srv.ensureRig(ctx.Sess.pushCtx(), ctx.Sess.Userid, gear)
 	// 记录钓组类型并读取当前钩上饵；路亚使用独立的咬钩节奏。
+	rigType := int64(0)
 	if row, err := srv.DB.GetItemByGUID(ctx.Sess.pushCtx(), gear); err == nil && row != nil {
 		rt := srv.rigTypeOfItem(ctx.Sess.pushCtx(), row)
+		rigType = rt
 		st.mu.Lock()
 		st.RigType = rt
 		st.mu.Unlock()
 	}
+	// 14/1 给出的是满力度上限；14/2 才携带本次实际落点、动作和出手力度。
+	// 这里只做真实请求诊断，不能把本杆力度写回下一杆的上限。
+	requestedM := throwDistance(ctx.Tree)
+	action := uint32(findObjNthByte(ctx.Tree, "olieodeoaof", 0))
+	profile := srv.castDistanceForRig(ctx.Sess.pushCtx(), ctx.Sess.Userid, gear, rigType)
+	actionMaxM := profile.DistanceM * castActionFactor(action)
+	powerRatio := 0.0
+	if actionMaxM > 0 {
+		powerRatio = requestedM / actionMaxM
+	}
+	ctx.Log.Info("实际抛投请求", "rod", shortGUID(gear), "requested_m", math.Round(requestedM*100)/100,
+		"max_m", math.Round(profile.DistanceM*100)/100, "action", action,
+		"action_factor", math.Round(castActionFactor(action)*1000)/1000,
+		"power_ratio", math.Round(powerRatio*1000)/1000)
 	if bait := srv.currentBait(ctx.Sess.pushCtx(), gear); bait != "" {
 		st.mu.Lock()
 		st.Bait = bait
@@ -711,6 +714,24 @@ func findObjStr(root *proto.Value, class string) string {
 
 func findObjU32(root *proto.Value, class string) uint64 {
 	return findObjNthU32(root, class, 0)
+}
+
+// findObjNthByte 取对象第 n 个 BYTE 字段。14/2 的 olieodeoaof.f8 是本次
+// 抛投动作枚举，不能和距离、钓点这些 U32 混读。
+func findObjNthByte(root *proto.Value, class string, n int) uint64 {
+	if o := findObj(root, class); o != nil {
+		seen := 0
+		for i := range o.Fields {
+			if o.Fields[i].Op != "BYTE" || o.Fields[i].Num == nil {
+				continue
+			}
+			if seen == n {
+				return u64Of(o.Fields[i].Num)
+			}
+			seen++
+		}
+	}
+	return 0
 }
 
 // findObjNthU32 取对象第 n 个 U32 字段。14/2 中 loc 是首个非空字符串，

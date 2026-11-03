@@ -45,6 +45,20 @@ func reelOilWearFactor(quality float64) float64 {
 	return 1.25 - quality/200
 }
 
+// reelCastFriction 把轴承、润滑油和轮子耐久换算为放线摩擦系数。
+// 润滑油越好、轴承越顺、轮子耐久越高，摩擦越小。返回值越大，
+// 客户端能够使用的全力抛投距离越短。
+func reelCastFriction(bearingQuality, oilQuality, durability float64) float64 {
+	bearingQuality = math.Max(0, math.Min(100, bearingQuality))
+	oilQuality = math.Max(0, math.Min(100, oilQuality))
+	durability = math.Max(0, math.Min(1, durability))
+	friction := 0.05 +
+		0.18*(1-bearingQuality/100) +
+		0.16*(1-oilQuality/100) +
+		0.12*(1-durability)
+	return math.Max(0.05, math.Min(0.55, friction))
+}
+
 // reelPartDef 返回内嵌轮子零件对应的静态定义。
 func (s *Server) reelPartDef(ctx context.Context, child *proto.Value) *store.ItemDef {
 	if s == nil || s.DB == nil || child == nil || child.Kind != proto.KindObj {
@@ -59,6 +73,22 @@ func (s *Server) reelPartDef(ctx context.Context, child *proto.Value) *store.Ite
 		return nil
 	}
 	return def
+}
+
+// selectedReelPart 返回轮子树中当前安装的指定品类零件及其静态定义。
+// 工坊改装后的传动比、摩擦力和轴承油品都必须优先从这里读取。
+func (s *Server) selectedReelPart(ctx context.Context, fields []proto.Field, category int64) (*proto.Value, *store.ItemDef, int, bool) {
+	for i := range fields {
+		child := fields[i].Val
+		if child == nil || child.Kind != proto.KindObj {
+			continue
+		}
+		def := s.reelPartDef(ctx, child)
+		if def != nil && def.Category == category {
+			return child, def, i, true
+		}
+	}
+	return nil, nil, -1, false
 }
 
 // reelBaseDragFromRow 从当前已安装的摩擦片实例读取基础制动力。
@@ -140,7 +170,9 @@ func (s *Server) syncReelPerformance(ctx context.Context, row *store.Item) (*sto
 		OilItemID:      oilItemID,
 		OilQuality:     oilQuality,
 		OilWearFactor:  reelOilWearFactor(oilQuality),
+		CastFriction:   reelCastFriction(bearingQuality, oilQuality, durability),
 	}
+	v.CastEfficiency = 1 - v.CastFriction
 	// 重算改装参数时不能清掉尚未跨档的润滑磨损进度。
 	if old, err := s.DB.GetReelPerformance(ctx, row.GUID); err == nil && old != nil {
 		v.WearProgress = old.WearProgress

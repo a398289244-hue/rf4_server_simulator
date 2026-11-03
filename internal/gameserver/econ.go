@@ -78,6 +78,7 @@ func (s *Server) fishingEnd(ctx *Ctx) ([]byte, bool) {
 	pending := st.Pending
 	hooked := st.Hooked
 	rigType := st.RigType
+	gearGUID := st.GearGuid
 	st.mu.Unlock()
 
 	cctx := ctx.Sess.pushCtx()
@@ -128,7 +129,7 @@ func (s *Server) fishingEnd(ctx *Ctx) ([]byte, bool) {
 	}
 	obj801, err := wiregen.MakeObj("caagocpofin", map[int]*proto.Value{
 		0:  f0,
-		1:  proto.U32(castBaseDistanceBits(rigType)),
+		1:  proto.U32(s.castDistanceBitsForRig(cctx, uid, gearGUID, rigType)),
 		2:  proto.U32(f32Const801F2),
 		3:  build5003(),
 		4:  proto.Null(),

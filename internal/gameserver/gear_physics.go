@@ -27,6 +27,7 @@ const (
 	gearAttrTestMax  = "jfebacgmlmb"
 	gearAttrTaper    = "ddebfbbjppk"
 	gearAttrStretch  = "aomkdnjcgji"
+	gearAttrDensity  = "lgjeahdobch"
 	gearAttrLineLen  = "ljnnpokapig"
 	gearAttrDrag     = "mlfjkaoicdn"
 	gearAttrGear     = "oiaplokhcii"
@@ -171,6 +172,7 @@ func lineStrengthKg(def *store.ItemDef) float64 { return itemDefF32(def, gearAtt
 func lineDiameterMM(def *store.ItemDef) float64 { return itemDefF32(def, gearAttrDiameter) }
 func lineLengthM(def *store.ItemDef) int64      { return itemDefInt(def, gearAttrLineLen) }
 func lineStretch(def *store.ItemDef) float64    { return itemDefF32(def, gearAttrStretch) }
+func lineDensityGPM(def *store.ItemDef) float64 { return itemDefF32(def, gearAttrDensity) }
 
 func leaderStrengthKg(def *store.ItemDef) float64 {
 	if def == nil {

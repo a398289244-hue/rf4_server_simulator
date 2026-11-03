@@ -64,6 +64,21 @@ func TestFindObjSecondU32ForCastSpot(t *testing.T) {
 	}
 }
 
+func TestFindCastActionByte(t *testing.T) {
+	obj := proto.Obj("olieodeoaof", 0,
+		proto.Field{Op: "U32", Num: ptrU64(uint64(proto.F32Bits(18.5)))},
+		proto.Field{Op: "BYTE", Num: ptrU64(2)},
+		proto.Field{Op: "BYTE", Num: ptrU64(7)},
+	)
+	tree := proto.Args524(obj)
+	if got := findObjNthByte(tree, "olieodeoaof", 0); got != 2 {
+		t.Fatalf("action=%d，期望首个 BYTE=2", got)
+	}
+	if got := findObjNthByte(tree, "olieodeoaof", 1); got != 7 {
+		t.Fatalf("action=%d，期望第二个 BYTE=7", got)
+	}
+}
+
 func TestFishingTickRecomputesSettledAndLocation(t *testing.T) {
 	srv, _ := newDetachTestServer(t)
 	sess := newProbeSess(srv)
