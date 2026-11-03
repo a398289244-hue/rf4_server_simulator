@@ -229,6 +229,7 @@ func (s *Server) replyBaitDigResult(ctx *Ctx, tree *proto.Value, masteryGain flo
 		6: items,
 		7: items,
 	})
+	obj.Fields[3].Val = s.buildSingleSkill312(ctx.Sess.pushCtx(), ctx.Sess.Userid, captureBaitSkillID)
 	body, err := proto.EncodeValue(obj, ctx.Sess.Table())
 	if err != nil {
 		ctx.Log.Warn("挖饵 803 编码失败", "err", err)

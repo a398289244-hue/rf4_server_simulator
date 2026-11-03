@@ -136,7 +136,7 @@ func TestSettleMembershipDoesNotChangeXP(t *testing.T) {
 	// 永久会员：不得产生额外 XP 或 Premium 分解项。
 	mk(1000001, 2)
 	f := fish(1000001)
-	res := srv.settleCatchXP(ctx, 1000001, f, "worm_01")
+	res := srv.settleCatchXP(ctx, 1000001, f, 1)
 	if res.baseXP != 229 {
 		t.Fatalf("基础经验=%d, want 229（perch 642g grade2）", res.baseXP)
 	}
@@ -174,7 +174,7 @@ func TestSettleMembershipDoesNotChangeXP(t *testing.T) {
 	// 非会员逐值一致。
 	mk(1000002, 0)
 	f2 := fish(1000002)
-	res2 := srv.settleCatchXP(ctx, 1000002, f2, "worm_01")
+	res2 := srv.settleCatchXP(ctx, 1000002, f2, 1)
 	if res2.totalXP != 229 {
 		t.Fatalf("非会员总经验=%d, want 229", res2.totalXP)
 	}
@@ -269,7 +269,7 @@ func TestPersonalRecordFlagFollowsKeptWeight(t *testing.T) {
 		t.Fatal(err)
 	}
 	lighter := &RolledFish{FishGUID: newFishGUID(), Species: "perch", Grade: 2, WeightG: 642, LengthM: 0.28, LocLevel: "level_001_lake"}
-	res := srv.settleCatchXP(ctx, uid, lighter, "worm_01")
+	res := srv.settleCatchXP(ctx, uid, lighter, 1)
 	if res.isRecord {
 		t.Fatal("642g 未超过已入护的 800g，不应记为个人纪录")
 	}
@@ -277,14 +277,14 @@ func TestPersonalRecordFlagFollowsKeptWeight(t *testing.T) {
 		t.Fatalf("310.f1=%d, want 0", got)
 	}
 	heavier := &RolledFish{FishGUID: newFishGUID(), Species: "perch", Grade: 4, WeightG: 900, LengthM: 0.35, LocLevel: "level_001_lake"}
-	res2 := srv.settleCatchXP(ctx, uid, heavier, "worm_01")
+	res2 := srv.settleCatchXP(ctx, uid, heavier, 1)
 	if !res2.isRecord {
 		t.Fatal("900g 超过已入护的 800g，应记为个人纪录")
 	}
 	if got := u32Of(srv.buildSettle813(ctx, uid, heavier, res2).Field(8).Val.Field(1).Num); got != 1 {
 		t.Fatalf("310.f1=%d, want 1", got)
 	}
-	if got := u32Of(srv.build813(ctx, uid, heavier, 900).Field(8).Val.Field(1).Num); got != 0 {
+	if got := u32Of(srv.build813(ctx, uid, heavier, 900, 0).Field(8).Val.Field(1).Num); got != 0 {
 		t.Fatalf("同重 310.f1=%d, want 0", got)
 	}
 }

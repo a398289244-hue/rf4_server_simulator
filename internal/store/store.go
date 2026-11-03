@@ -102,6 +102,7 @@ func (d *DB) ensureLegacyPlayerColumns() error {
 	}{
 		{"profile", "region", "TEXT DEFAULT 'CN'"},
 		{"profile", "membership", "INTEGER NOT NULL DEFAULT 0"},
+		{"profile", "membership_exp", "INTEGER NOT NULL DEFAULT 0"},
 		{"profile", "stars", "INTEGER NOT NULL DEFAULT 0"},
 		{"profile", "created_ts", "REAL"},
 		{"profile", "updated_ts", "REAL"},
@@ -143,6 +144,11 @@ func (d *DB) ensureLegacyPlayerColumns() error {
 		stmt := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN %s %s`,
 			quoteIdentifier(spec.table), quoteIdentifier(spec.column), spec.declSQL)
 		if _, err := d.SQL.Exec(stmt); err != nil {
+			// admin 与 gameserver 可能同时启动并同时补列；后到的进程会收到
+			// duplicate column name，视作已补齐而不是启动失败。
+			if strings.Contains(strings.ToLower(err.Error()), "duplicate column name") {
+				continue
+			}
 			return fmt.Errorf("%s.%s: %w", spec.table, spec.column, err)
 		}
 	}

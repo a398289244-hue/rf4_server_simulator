@@ -97,12 +97,8 @@ func (s *Server) fishingEnd(ctx *Ctx) ([]byte, bool) {
 		newLevel, _, gained := s.grantXp(cctx, uid, xp)
 		levelsGained = gained
 		prevLevel = max64(1, newLevel-1)
-		// 熟练度：bait 以 spinner 开头 → 2（纺车）否则 1（浮钓）；+0.2
-		skillID := int64(1)
-		if stBait := st.Bait; stBait != "" && len(stBait) >= 7 && stBait[:7] == "spinner" {
-			skillID = 2
-		}
-		_ = s.DB.AddSkillPoints(cctx, uid, skillID, 0.2)
+		// 按实际钓组大类增长；概率随当前熟练度反比下降，满熟练度不再增加。
+		skillID, skillGain := s.awardFishingProficiency(cctx, uid, rigType)
 		// catch_log 只在 14/5 入护时写入；14/4 放生的鱼不进入统计和纪录。
 		pending.XP = xp
 		pending.Silver = silver
@@ -112,7 +108,7 @@ func (s *Server) fishingEnd(ctx *Ctx) ([]byte, bool) {
 		st.LastSkill = skillID
 		st.mu.Unlock()
 
-		stats813 = s.build813(cctx, uid, pending, prevBest)
+		stats813 = s.build813(cctx, uid, pending, prevBest, skillGain)
 		profileTree, _ = s.BuildProfile307(cctx, uid)
 		skill312 = s.buildSingleSkill312(cctx, uid, skillID)
 	}
@@ -162,7 +158,7 @@ func (s *Server) fishingEnd(ctx *Ctx) ([]byte, bool) {
 }
 
 // build813 搏鱼统计块（813 内嵌 310 + 25）。
-func (s *Server) build813(ctx context.Context, uid int64, f *RolledFish, prevBest int64) *proto.Value {
+func (s *Server) build813(ctx context.Context, uid int64, f *RolledFish, prevBest int64, skillGain float64) *proto.Value {
 	// SPECIES_FIGHT_STATICS 鱼种静态组（未知鱼种按 species_weight 推导）
 	st := s.settleStatics(ctx, f.Species)
 	f0, f1, f2, f3, f5 := float64(st[0]), float64(st[1]), float64(st[2]), float64(st[3]), float64(st[5])
@@ -180,7 +176,7 @@ func (s *Server) build813(ctx context.Context, uid int64, f *RolledFish, prevBes
 		0: proto.U64(uint64(f.XP)), // 单鱼经验（不是累计）
 		1: proto.U32(personalRecordFlag(prevBest <= 0 || f.WeightG > prevBest)),
 		2: proto.U32(uint32(stLastSkill(s, uid))),
-		3: proto.F32(0.2),
+		3: proto.F32(float32(skillGain)),
 		4: proto.Null(),
 		5: proto.U32(0), // levelsGained 由 2/6 承担
 		6: proto.Args(proto.S("31")),

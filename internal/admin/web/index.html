@@ -185,7 +185,8 @@ function renderPlayerTab(){
       <div class="field"><label>银币（分）</label><input id="pf_silver" type="number" value="${p.silver}"></div>
       <div class="field"><label>金币（分）</label><input id="pf_gold" type="number" value="${p.gold}"></div>
       <div class="field"><label>银行（分）</label><input id="pf_bank" type="number" value="${p.bank}"></div>
-      <div class="field"><label>会员</label><input value="${p.membership}" disabled></div>
+      <div class="field"><label>会员</label><select id="pf_membership"><option value="0" ${p.membership? '':'selected'}>普通</option><option value="1" ${p.membership? 'selected':''}>高级会员</option></select></div>
+      <div class="field"><label>会员到期</label><input id="pf_membership_exp" type="datetime-local" value="${localInput(p.membership_exp)}"></div>
     </div><div class="actions"><button class="btn good" onclick="saveProfile()">保存档案与货币</button><button class="btn alt" onclick="selectPlayer(${p.uid})">撤销修改</button></div>`;
   }
   if(PLAYER_TAB==='items')renderItems();
@@ -193,8 +194,16 @@ function renderPlayerTab(){
   if(PLAYER_TAB==='skills')renderSkills();
   if(PLAYER_TAB==='mail')renderPlayerMail();
 }
+function localInput(ts){
+  if(!ts) return '';
+  const d=new Date(ts*1000), p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 async function saveProfile(){
-  const body={uid:PLAYER.uid,name:$('#pf_name').value,level:+$('#pf_level').value,xp:+$('#pf_xp').value,silver:+$('#pf_silver').value,gold:+$('#pf_gold').value,bank:+$('#pf_bank').value};
+  const expRaw=$('#pf_membership_exp').value;
+  const membership=+$('#pf_membership').value;
+  const membership_exp=expRaw?Math.floor(new Date(expRaw).getTime()/1000):0;
+  const body={uid:PLAYER.uid,name:$('#pf_name').value,level:+$('#pf_level').value,xp:+$('#pf_xp').value,silver:+$('#pf_silver').value,gold:+$('#pf_gold').value,bank:+$('#pf_bank').value,membership,membership_exp};
   await api('/api/players/update',{method:'POST',body:JSON.stringify(body)});toast('档案已保存，在线玩家将收到 2/1 刷新');await sleep(400);await selectPlayer(PLAYER.uid);
 }
 function renderItems(){

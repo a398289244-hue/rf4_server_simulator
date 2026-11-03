@@ -16,6 +16,7 @@ type Profile struct {
 	Gold       int64
 	Region     string
 	Membership int64
+	MembershipExp int64
 	Stars      int64
 	Bank       int64
 	Email      string
@@ -43,13 +44,13 @@ func (d *DB) EnsureProfile(ctx context.Context, uid int64) (*Profile, error) {
 func (d *DB) GetProfile(ctx context.Context, uid int64) (*Profile, error) {
 	row := d.SQL.QueryRowContext(ctx, `
 		SELECT uid, name, level, xp, silver, gold, COALESCE(region,'CN'),
-		       membership, stars, bank, COALESCE(email,''), role,
+		       membership, COALESCE(membership_exp,0), stars, bank, COALESCE(email,''), role,
 		       COALESCE(banned,0), COALESCE(created_ts,0), COALESCE(updated_ts,0)
 		FROM profile WHERE uid=?`, uid)
 	var p Profile
 	var banned int64
 	err := row.Scan(&p.UID, &p.Name, &p.Level, &p.XP, &p.Silver, &p.Gold,
-		&p.Region, &p.Membership, &p.Stars, &p.Bank, &p.Email, &p.Role,
+		&p.Region, &p.Membership, &p.MembershipExp, &p.Stars, &p.Bank, &p.Email, &p.Role,
 		&banned, &p.CreatedTS, &p.UpdatedTS)
 	if err != nil {
 		return nil, err

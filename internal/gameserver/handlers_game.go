@@ -667,7 +667,23 @@ func hCast(ctx *Ctx) ([]byte, bool) {
 		st.Bait = bait
 		st.mu.Unlock()
 	}
-	srv.scheduleBite(ctx.Sess, st)
+	// 水体距离闸门：玩家离水体太远（抛投够不到）时不派鱼。
+	// 只有该地点有水体矩形数据时才判定；没有数据一律放行，避免误伤。
+	st.mu.Lock()
+	hasPos, px, pz, locNow := st.HasPos, st.PosX, st.PosZ, st.Loc
+	st.mu.Unlock()
+	if hasPos {
+		const waterReachM = 15.0
+		nearWater, hasData := waterWithin(locNow, px, pz, waterReachM)
+		ctx.Log.Info("抛竿水体诊断", "loc", locNow, "x", px, "z", pz, "hasData", hasData, "near", nearWater)
+		if hasData && !nearWater {
+			ctx.Log.Info("距水体过远，本杆不派鱼", "loc", locNow, "x", px, "z", pz, "reach", waterReachM)
+		} else {
+			srv.scheduleBite(ctx.Sess, st)
+		}
+	} else {
+		srv.scheduleBite(ctx.Sess, st)
+	}
 
 	// 响应 800.f0 返回当前钓组 157 对象，包含完整竿树和重建后的 f5。
 	cctx := ctx.Sess.pushCtx()
@@ -768,7 +784,24 @@ func hFishingStep(ctx *Ctx) ([]byte, bool) {
 			}
 			changed := anim != st.LastAnim
 			st.LastAnim = anim
+			// 动画位 0x400 = 钓组在水中（实测：水里抛竿几秒后出现，岸上没有）。
+			enterWater := false
+			needBite := false
+			if st.CastActive && !st.InWater && anim&rigAnimInWaterMask != 0 {
+				st.InWater = true
+				enterWater = true
+				if st.NeedBite {
+					st.NeedBite = false
+					needBite = true
+				}
+			}
 			st.mu.Unlock()
+			if needBite {
+				ctx.Log.Info("钓组在水中(0x400)，补排咬钩", "f5", fmt.Sprintf("0x%X", anim))
+				ctx.Sess.Srv.scheduleBiteForHooked(ctx.Sess, st)
+			} else if enterWater {
+				ctx.Log.Info("钓组在水中(0x400)", "f5", fmt.Sprintf("0x%X", anim))
+			}
 			// 14/7 每帧都会发送，仅在动画位变化时记录日志。
 			if changed {
 				ctx.Log.Info("14/7 钓组动画位", "f5", fmt.Sprintf("0x%X", anim))
@@ -886,6 +919,12 @@ func hFishingLoad(ctx *Ctx) ([]byte, bool) {
 // hFishingEnd 处理 14/4 收竿结算。
 // 结算由 progress_ops.go 的 fishingEndSettle 完成，包括经验、Premium 加成和等级更新。
 func hFishingEnd(ctx *Ctx) ([]byte, bool) {
+	// 收竿：钓组离水，清掉“在水中/挂起”状态。
+	st := ctx.Sess.Srv.stateFor(ctx.Sess.Userid)
+	st.mu.Lock()
+	st.InWater = false
+	st.NeedBite = false
+	st.mu.Unlock()
 	body, ok := ctx.Sess.Srv.fishingEndSettle(ctx)
 	ctx.Log.Info("14/4 收竿", "handled", ok, "bytes", len(body))
 	return body, ok
@@ -932,6 +971,7 @@ func registerSessionHandlers(d *Dispatch) {
 	d.Register(11, 1, hShortcutSnapshot)
 	d.Register(11, 2, hShortcutBind)
 	d.Register(11, 3, hShortcutUnbind)
+	d.Register(3, 9, hPositionReport) // 位置同步：记录玩家世界坐标
 	d.Register(3, 30, hRigSyncBackpack)
 	d.Register(3, 31, hRigSyncRig)
 	d.Register(3, 37, hPlaceBuyout)

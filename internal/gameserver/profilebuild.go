@@ -97,7 +97,11 @@ func (s *Server) BuildProfile307(ctx context.Context, uid int64) (*proto.Value, 
 
 	var membershipExp uint64
 	if p.Membership == 1 {
-		membershipExp = uint64(proto.UnixToFiletime(time.Now().Add(30 * 24 * time.Hour).Unix()))
+		exp := p.MembershipExp
+		if exp <= 0 {
+			exp = time.Now().Add(30 * 24 * time.Hour).Unix()
+		}
+		membershipExp = uint64(proto.UnixToFiletime(exp))
 	}
 	totalPts := skillPointsTotal(p.Level)
 

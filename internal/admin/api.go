@@ -318,7 +318,8 @@ func (s *Server) handlePlayerDetail(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{
 		"uid": p.UID, "name": p.Name, "level": p.Level, "xp": p.XP,
 		"silver": p.Silver, "gold": p.Gold, "bank": p.Bank,
-		"membership": p.Membership, "stars": p.Stars, "email": p.Email,
+		"membership": p.Membership, "membership_exp": p.MembershipExp,
+		"stars": p.Stars, "email": p.Email,
 		"role": p.Role, "banned": p.Banned,
 		"item_count": len(items), "keepnet_count": len(keepnet), "mail_count": len(mails),
 		"items": items, "keepnet": keepnet, "mails": mailRows, "skills": skills,
@@ -336,6 +337,8 @@ func (s *Server) handlePlayerUpdate(w http.ResponseWriter, r *http.Request) {
 		Silver *int64  `json:"silver"`
 		Gold   *int64  `json:"gold"`
 		Bank   *int64  `json:"bank"`
+		Membership    *int64 `json:"membership"`
+		MembershipExp *int64 `json:"membership_exp"`
 	}
 	if err := readJSON(r, &req); err != nil || req.UID == 0 {
 		httpError(w, 400, "参数错误")
@@ -361,12 +364,23 @@ func (s *Server) handlePlayerUpdate(w http.ResponseWriter, r *http.Request) {
 	// 等级和经验必须保持一致：只改等级时按进度曲线回填对应经验；
 	// 否则下一次经验结算会按累计经验重新计算等级。
 	lvl, xpAfter := gameserver.AdminResolveLevelXP(req.Level, req.XP, p.Level, p.XP)
+	membership := apply(p.Membership, req.Membership)
+	if membership != 0 {
+		membership = 1
+	}
+	exp := apply(p.MembershipExp, req.MembershipExp)
+	if membership == 0 {
+		exp = 0
+	} else if exp <= 0 {
+		exp = time.Now().Add(30 * 24 * time.Hour).Unix()
+	}
 	_, err = s.db.SQL.ExecContext(ctx, `
-		UPDATE profile SET name=?, level=?, xp=?, silver=?, gold=?, bank=?, updated_ts=?
+		UPDATE profile SET name=?, level=?, xp=?, silver=?, gold=?, bank=?,
+		 membership=?, membership_exp=?, updated_ts=?
 		WHERE uid=?`,
 		name, lvl, xpAfter,
 		apply(p.Silver, req.Silver), apply(p.Gold, req.Gold), apply(p.Bank, req.Bank),
-		float64(time.Now().Unix()), req.UID)
+		membership, exp, float64(time.Now().Unix()), req.UID)
 	if err != nil {
 		httpError(w, 500, err.Error())
 		return

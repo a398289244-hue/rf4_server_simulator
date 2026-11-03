@@ -24,6 +24,9 @@ type FishState struct {
 	Spot         uint64
 	DepthCM      int64 // 玩家设钓深（17/12 记入；14/1 的 158.f2 透传用）
 	CastActive   bool
+	BiteGen      uint64 // 咬钩定时器代号：每次重排递增，过期定时器自动作废
+	InWater      bool   // 14/7 动画位出现 0x400（钓组在水中）
+	NeedBite     bool   // 到点时还没入水，挂起等 0x400 再派鱼
 	CastTs       time.Time
 	FallTs       time.Time
 	FallSeen     bool
@@ -40,7 +43,10 @@ type FishState struct {
 	BiteAt       time.Time     // 原定咬钩绝对时刻；硬重启后据此恢复 timer
 	Keepnet      []*RolledFish // 回退缓存（DB 权威）
 	Bait         string
-	LastSkill    int64       // 本次钓鱼大类（1 浮钓 / 2 纺车）
+	PosX         float64 // 3/9 位置同步：世界坐标 X
+	PosZ         float64 // 3/9 位置同步：世界坐标 Z
+	HasPos       bool
+	LastSkill    int64       // 本次钓鱼大类（1 浮钓 / 2 纺车 / 3 底钓 / 11 海钓）
 	Armed        *RolledFish // GM 武装"下一杆必上"（唯一绕过重量上限的路径）
 	Bonus        fishingSkillBonus
 	persist      fishPersistMeta
@@ -78,6 +84,10 @@ func (s *Server) stateFor(uid int64) *FishState {
 // ---- 钓组动画就位位族 ----
 // 0x200 水层静止（浮标）、0x800 底部静止（沉底/Feeder）、0x1000 水面静止。
 const rigAnimSettledMask = 0x200 | 0x800 | 0x1000
+
+// rigAnimInWaterMask 是“钓组在水中”的位。实测：朝水里抛竿几秒后出现 0x400，
+// 朝岸上抛竿一直只有 0x0，可用于把“饵扔在陆地”的抛竿挡在出鱼之前。
+const rigAnimInWaterMask = 0x400
 
 // ---- 咬钩延迟 ----
 
@@ -1024,9 +1034,14 @@ func (s *Server) scheduleBiteState(sess *Session, st *FishState, preserveHooked,
 	}
 	st.CastActive = true
 	st.Resolved = false
-	st.Pending = nil
-	if !preserveHooked {
-		st.Hooked = false
+	// 已经推给客户端、且玩家刺中正在溜的鱼不能被新排程清掉：
+	// 否则客户端还在溜旧鱼，服务端却按新鱼结算（青蛙→其他鱼就是这么来的）。
+	fighting := st.PushSent && st.Hooked && st.Pending != nil
+	if !fighting {
+		st.Pending = nil
+		if !preserveHooked {
+			st.Hooked = false
+		}
 	}
 	st.PushSent = false
 	st.FallSeen = false
@@ -1035,22 +1050,35 @@ func (s *Server) scheduleBiteState(sess *Session, st *FishState, preserveHooked,
 	if resetCast || st.CastTs.IsZero() {
 		st.CastTs = now
 	}
+	if resetCast {
+		// 新的一杆：还没确认在水中，等 14/7 的 0x400。
+		st.InWater = false
+		st.NeedBite = false
+	}
 	st.Bonus = bonus
+	st.BiteGen++
+	gen := st.BiteGen
 	delay := s.biteDelay(st, bonus)
 	st.BiteAt = now.Add(time.Duration(delay * float64(time.Second)))
 	uid := sess.Userid
 	timer := time.AfterFunc(time.Until(st.BiteAt), func() {
-		s.onBiteTimer(uid)
+		s.onBiteTimer(uid, gen)
 	})
 	st.biteTimer = timer
 	st.mu.Unlock()
 }
 
 // onBiteTimer 到点：顺延保护检查 → 判鱼 → 推 14/14。
-func (s *Server) onBiteTimer(uid int64) {
+func (s *Server) onBiteTimer(uid int64, gen uint64) {
 	sess := s.liveSessionByUID(uid)
 	st := s.stateFor(uid)
 	st.mu.Lock()
+	if gen != st.BiteGen {
+		// 被重排替换掉的旧定时器：既不能清指针，也不能判鱼。否则会把新
+		// 定时器的指针清空，它就成了“没人管但仍在跑”的第二条鱼。
+		st.mu.Unlock()
+		return
+	}
 	st.biteTimer = nil
 	if sess == nil {
 		// 进程仍活着但玩家断开：保留 CastActive/Pending/BiteAt，下一次
@@ -1059,6 +1087,18 @@ func (s *Server) onBiteTimer(uid int64) {
 		return
 	}
 	if !st.CastActive || st.Resolved || st.PushSent {
+		st.mu.Unlock()
+		return
+	}
+	if st.Pending != nil {
+		// 钩上已经有鱼（或刚要结算），不能再判一条：否则会把 Pending 覆盖掉，
+		// 客户端还在溜旧鱼，结算却按新鱼算。
+		st.mu.Unlock()
+		return
+	}
+	if !st.InWater {
+		// 还没等到 14/7 的“在水中”动画位：先挂起，等它出现再派鱼。
+		st.NeedBite = true
 		st.mu.Unlock()
 		return
 	}
@@ -1082,7 +1122,7 @@ func (s *Server) onBiteTimer(uid int64) {
 			wait = minWait
 		}
 		st.BiteAt = now.Add(wait)
-		t := time.AfterFunc(wait, func() { s.onBiteTimer(uid) })
+		t := time.AfterFunc(wait, func() { s.onBiteTimer(uid, gen) })
 		st.biteTimer = t
 		st.mu.Unlock()
 		return
@@ -1093,7 +1133,7 @@ func (s *Server) onBiteTimer(uid int64) {
 	if !lure && now.Sub(st.CastTs) < 12*time.Second && st.TickSeen && !st.RigSettled {
 		// 顺延 1s 轮询（12s 兜底）
 		st.BiteAt = now.Add(time.Second)
-		t := time.AfterFunc(time.Second, func() { s.onBiteTimer(uid) })
+		t := time.AfterFunc(time.Second, func() { s.onBiteTimer(uid, gen) })
 		st.biteTimer = t
 		st.mu.Unlock()
 		return

@@ -1009,6 +1009,33 @@ func (s *Server) CreateItem(ctx context.Context, uid int64, itemID, container st
 	return it, nil
 }
 
+// prepareNewItemWithCount 按“实际件数”构造可堆叠物品，绕开定义单位量换算。
+// 铲子挖饵需要精确发放 1-5 个，而不是 1 个购买单位（自然饵通常为 30 个/单位）。
+func (s *Server) prepareNewItemWithCount(ctx context.Context, uid int64, itemID, container string,
+	count int64, explicitGUID string) (*store.Item, error) {
+	if count < 1 {
+		count = 1
+	}
+	it, err := s.prepareNewItem(ctx, uid, itemID, container, 1, explicitGUID)
+	if err != nil {
+		return nil, err
+	}
+	fields, err := FieldsFromJSON(it.FieldsJSON)
+	if err != nil {
+		return nil, err
+	}
+	if idx := fieldIdxByCS(it.WireClass, csQty); idx >= 0 && idx < len(fields) {
+		fields[idx].Num = ptrU64(uint64(count))
+		fj, ferr := FieldsToJSON(fields)
+		if ferr != nil {
+			return nil, ferr
+		}
+		it.FieldsJSON = fj
+	}
+	it.Qty = count
+	return it, nil
+}
+
 // AddToStack 为可堆叠物品合并数量，返回现有物品或新行。
 func (s *Server) AddToStack(ctx context.Context, uid int64, itemID, container string, units int64) (*store.Item, bool, error) {
 	def, err := s.DB.GetItemDefByItemID(ctx, itemID)

@@ -9,6 +9,8 @@
 
 如果只是想游玩，**不需要安装 Go，也不需要自行编译**。请前往 [Releases](https://github.com/glance522/rf4_server_simulator/releases/latest) 下载最新的 Windows 已编译版本，解压后阅读包内的“快速开始.txt”，双击“启动服务器.cmd”或 `bin\launcher.exe` 即可运行。
 
+如果正式 Release 更新不及时，可以尝试 [Releases](https://github.com/glance522/rf4_server_simulator/releases) 页面中最新标记为 **Pre-release** 的 **Preview** 版本。Preview 由 `main` 分支最新提交自动构建，包名和发布说明中会标明对应的 Commit ID。
+
 游玩过程中如果遇到 Bug、崩溃、协议异常或功能不符合预期，欢迎在 [Issues](https://github.com/glance522/rf4_server_simulator/issues) 中反馈。为便于定位问题，请尽量提供：
 
 - 使用的 Release 版本和客户端版本；

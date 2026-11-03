@@ -119,7 +119,7 @@ func TestCatchLogWrittenOnceOnKeep(t *testing.T) {
 	ctx := context.Background()
 	const uid = int64(1000001)
 	f := &RolledFish{FishGUID: "22222222222222222222222222222222", Species: "c.roach", Grade: 1, WeightG: 186, LengthM: 0.1981, LocLevel: "level_019_american_pond"}
-	if r := srv.settleCatchXP(ctx, uid, f, "worm_01"); r == nil {
+	if r := srv.settleCatchXP(ctx, uid, f, 1); r == nil {
 		t.Fatal("settleCatchXP 返回 nil")
 	}
 	st := srv.stateFor(uid)
