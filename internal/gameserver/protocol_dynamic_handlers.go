@@ -117,6 +117,8 @@ func hDynamicRodBreak(ctx *Ctx) ([]byte, bool) {
 	}
 
 	if srv.DB != nil && rodGUID != zeroGUID && ctx.DecodeOK {
+		// 17/9 会结束本次搏鱼，先把最后一段连续损耗写入，再处理超载冲击。
+		srv.flushReelFightWear(ctx.Sess, st)
 		outcome, err := srv.breakLineOrRod(ctx.Sess.pushCtx(), ctx.Sess.Userid, rodGUID, brokenGUID)
 		if err == nil {
 			st.mu.Lock()

@@ -19,46 +19,56 @@ import (
 
 // FishState 保存单个玩家的钓鱼状态，重连后继续使用。
 type FishState struct {
-	mu             fishStateMutex
-	finishMu       sync.Mutex
-	GearGuid       string
-	RigType        int64 // jppmjnahbpo 钓组种类（on_cast 记录；路亚族单独节奏）
-	Loc            string
-	Spot           uint64
-	DepthCM        int64 // 玩家设钓深（17/12 记入；14/1 的 158.f2 透传用）
-	CastActive     bool
-	InWater        bool
-	NeedBite       bool
-	PosX           float64
-	PosZ           float64
-	HasPos         bool
-	CastPosX       float64
-	CastPosZ       float64
-	HasCastPos     bool
-	CastTs         time.Time
-	FallTs         time.Time
-	FallSeen       bool
-	RigSettled     bool
-	TickSeen       bool
-	TickSeq        uint64 // 14/7 f14 客户端 tick 序号（诊断/恢复）
-	LastAnim       uint32 // 14/7 f5 上一次的动画位（仅在变更时打日志）
-	PushSent       bool
-	pushing        *RolledFish // 仅进程内：防止同一尾鱼并发重推
-	Hooked         bool
-	Resolved       bool
-	Pending        *RolledFish
-	biteTimer      *time.Timer
-	pendingTimer   *time.Timer
-	castGeneration uint64
-	biteTicket     uint64
-	pendingTicket  uint64
-	BiteAt         time.Time     // 原定咬钩绝对时刻；硬重启后据此恢复 timer
-	Keepnet        []*RolledFish // 回退缓存（DB 权威）
-	Bait           string
-	LastSkill      int64       // 本次钓鱼大类（1 浮钓 / 2 纺车）
-	Armed          *RolledFish // GM 武装"下一杆必上"（唯一绕过重量上限的路径）
-	Bonus          fishingSkillBonus
-	persist        fishPersistMeta
+	mu                fishStateMutex
+	finishMu          sync.Mutex
+	GearGuid          string
+	RigType           int64 // jppmjnahbpo 钓组种类（on_cast 记录；路亚族单独节奏）
+	Loc               string
+	Spot              uint64
+	DepthCM           int64 // 玩家设钓深（17/12 记入；14/1 的 158.f2 透传用）
+	CastActive        bool
+	InWater           bool
+	NeedBite          bool
+	PosX              float64
+	PosZ              float64
+	HasPos            bool
+	CastPosX          float64
+	CastPosZ          float64
+	HasCastPos        bool
+	CastTs            time.Time
+	FallTs            time.Time
+	FallSeen          bool
+	RigSettled        bool
+	TickSeen          bool
+	TickSeq           uint64 // 14/7 f14 客户端 tick 序号（诊断/恢复）
+	LastAnim          uint32 // 14/7 f5 上一次的动画位（仅在变更时打日志）
+	PushSent          bool
+	pushing           *RolledFish // 仅进程内：防止同一尾鱼并发重推
+	Hooked            bool
+	Resolved          bool
+	Pending           *RolledFish
+	biteTimer         *time.Timer
+	pendingTimer      *time.Timer
+	castGeneration    uint64
+	biteTicket        uint64
+	pendingTicket     uint64
+	BiteAt            time.Time     // 原定咬钩绝对时刻；硬重启后据此恢复 timer
+	Keepnet           []*RolledFish // 回退缓存（DB 权威）
+	Bait              string
+	LastSkill         int64       // 本次钓鱼大类（1 浮钓 / 2 纺车）
+	Armed             *RolledFish // GM 武装"下一杆必上"（唯一绕过重量上限的路径）
+	Bonus             fishingSkillBonus
+	FightLastTick     time.Time
+	FightLastDistance float64
+	FightDistanceSeen bool
+	FightElapsed      time.Duration
+	FightStamina      float64
+	FightDragCapacity float64
+	FightLastTension  float64
+	FightLastPull     time.Time
+	FightWear         reelWearDelta
+	FightWearSince    time.Time
+	persist           fishPersistMeta
 }
 
 type fishingTimerTicket struct{ generation, sequence uint64 }

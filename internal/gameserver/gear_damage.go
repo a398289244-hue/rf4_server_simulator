@@ -445,53 +445,32 @@ func (s *Server) resolveGearBreak(ctx context.Context, uid int64, rodGUID, repor
 	return gearBreakDecision{Part: "rod", GUID: rodGUID, Category: gearCatRod}, nil
 }
 
-// damageReelOverload 在锁轮成为最弱环时让轮子按 20% 阶段掉耐久，最低保留 20%。
-// 轮子不会像线或子线一样从钓组删除；更新后的承力立即写入 reel_performance。
+// damageReelOverload 处理轮子成为最弱环的 17/9。超载程度按最近张力/实际制动力计算，
+// 只增加各部件的隐藏磨损，不再一次固定扣 20% 整轮耐久。
 func (s *Server) damageReelOverload(ctx context.Context, uid int64, rodGUID, reelGUID string) (*gearBreakOutcome, error) {
 	reel, err := s.DB.GetItemByGUID(ctx, reelGUID)
 	if err != nil || reel == nil || reel.UID != uid {
 		return nil, sql.ErrNoRows
 	}
-	before := reel.Durability
 	beforePerf, err := s.syncReelPerformance(ctx, reel)
 	if err != nil {
 		return nil, err
 	}
-	progress := beforePerf.WearProgress + reelDurabilityStep*beforePerf.OilWearFactor
-	after := before
-	for progress+1e-9 >= reelDurabilityStep && after > reelDurabilityStep {
-		after = math.Max(reelDurabilityStep, math.Round((after-reelDurabilityStep)*100)/100)
-		progress -= reelDurabilityStep
+	tension := 0.0
+	st := s.stateFor(uid)
+	st.mu.Lock()
+	tension = st.FightLastTension
+	st.mu.Unlock()
+	overloadRatio := .15 // 没有连续帧时只按轻度瞬时冲击处理。
+	if beforePerf.LockedDragKg > 0 && tension > beforePerf.LockedDragKg {
+		overloadRatio = tension/beforePerf.LockedDragKg - 1
 	}
-	if after <= reelDurabilityStep {
-		progress = 0
-	}
-	if after != before {
-		if err := s.persistItemDurability(ctx, reel, after); err != nil {
-			return nil, err
-		}
-	}
-	perf, err := s.syncReelPerformance(ctx, reel)
+	perf, err := s.applyReelWearToReel(ctx, uid, rodGUID, reelGUID, overloadReelWear(overloadRatio), damageEventReelOverload)
 	if err != nil {
 		return nil, err
 	}
-	perf.WearProgress = math.Max(0, progress)
-	if err := s.DB.UpsertReelPerformance(ctx, *perf); err != nil {
-		return nil, err
-	}
-	if err := s.DB.AddItemDamageLog(ctx, store.ItemDamageLog{
-		UID: uid, ItemGUID: reel.GUID, ItemID: reel.ItemID, Event: damageEventReelOverload,
-		BeforeDurability: ptrFloat64(before), AfterDurability: ptrFloat64(after),
-		DetailJSON: damageDetailJSON(map[string]any{
-			"rod_guid": rodGUID, "base_drag_kg": perf.BaseDragKg,
-			"locked_drag_kg": perf.LockedDragKg, "lock_multiplier": reelLockMultiplier(after),
-			"bearing_item_id": perf.BearingItemID, "bearing_quality": perf.BearingQuality,
-			"bearing_factor": perf.BearingFactor, "oil_item_id": perf.OilItemID,
-			"oil_quality": perf.OilQuality, "oil_wear_factor": perf.OilWearFactor,
-			"wear_progress": perf.WearProgress,
-		}),
-	}); err != nil {
-		return nil, err
+	if perf == nil {
+		perf = beforePerf
 	}
 	updated := s.loadUpdatedTrees(ctx, []string{rodGUID, reelGUID})
 	return &gearBreakOutcome{

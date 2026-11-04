@@ -1445,6 +1445,12 @@ func hWorkshopRepair(useGold bool) Handler {
 			return nil, false
 		}
 		row.Durability = 1.0
+		if row.WireClass == "dgjinoebdop" {
+			if err := srv.DB.ResetReelComponentWear(cctx, guid); err != nil {
+				ctx.Log.Warn("渔轮分部件耐久重置失败", "guid", shortGUID(guid), "err", err)
+			}
+			_, _ = srv.syncReelPerformance(cctx, row)
+		}
 		if err := srv.DB.AddItemDamageLog(cctx, store.ItemDamageLog{
 			UID: ctx.Sess.Userid, ItemGUID: guid, ItemID: row.ItemID, Event: damageEventRepair,
 			BeforeDurability: ptrFloat64(beforeDurability), AfterDurability: ptrFloat64(1.0),

@@ -59,6 +59,14 @@ func reelCastFriction(bearingQuality, oilQuality, durability float64) float64 {
 	return math.Max(0.05, math.Min(0.55, friction))
 }
 
+// reelOverallDurability 是客户端看到的轮子总耐久。摩擦制动器对
+// 可用性影响最大，主动齿轮次之；润滑油会加速其它部件磨损，
+// 但不应单独让整只轮子瞬间报废。
+func reelOverallDurability(spool, drag, bearing, oil, gear float64) float64 {
+	clamp := func(v float64) float64 { return math.Max(0, math.Min(1, v)) }
+	return clamp(.12*clamp(spool) + .40*clamp(drag) + .16*clamp(bearing) + .10*clamp(oil) + .22*clamp(gear))
+}
+
 // reelPartDef 返回内嵌轮子零件对应的静态定义。
 func (s *Server) reelPartDef(ctx context.Context, child *proto.Value) *store.ItemDef {
 	if s == nil || s.DB == nil || child == nil || child.Kind != proto.KindObj {
@@ -150,32 +158,42 @@ func (s *Server) syncReelPerformance(ctx context.Context, row *store.Item) (*sto
 	base := s.reelBaseDragFromRow(ctx, row)
 	bearingItemID, bearingQuality := s.reelPartQualityFromRow(ctx, row, 7)
 	oilItemID, oilQuality := s.reelPartQualityFromRow(ctx, row, 10)
-	bearingFactor := reelBearingFactor(bearingQuality)
-	durability := row.Durability
-	if durability < reelDurabilityStep {
-		durability = reelDurabilityStep
+	spoolDurability, dragDurability := row.Durability, row.Durability
+	bearingDurability, oilDurability, gearDurability := row.Durability, row.Durability, row.Durability
+	var old *store.ReelPerformance
+	if saved, err := s.DB.GetReelPerformance(ctx, row.GUID); err == nil && saved != nil {
+		old = saved
+		spoolDurability, dragDurability = saved.SpoolDurability, saved.DragDurability
+		bearingDurability, oilDurability, gearDurability = saved.BearingDurability, saved.OilDurability, saved.GearDurability
 	}
-	if durability > 1 {
-		durability = 1
-	}
+	durability := reelOverallDurability(spoolDurability, dragDurability, bearingDurability, oilDurability, gearDurability)
+	// 轴承本身的品质决定上限，其磨损程度再降低传力效率。
+	bearingFactor := reelBearingFactor(bearingQuality) * (.85 + .15*math.Max(0, math.Min(1, bearingDurability)))
+	effectiveOilQuality := oilQuality * math.Max(0, math.Min(1, oilDurability))
 	v := &store.ReelPerformance{
-		ReelGUID:       row.GUID,
-		UID:            row.UID,
-		BaseDragKg:     base,
-		LockedDragKg:   base * reelLockMultiplier(durability) * bearingFactor,
-		Durability:     durability,
-		BearingItemID:  bearingItemID,
-		BearingQuality: bearingQuality,
-		BearingFactor:  bearingFactor,
-		OilItemID:      oilItemID,
-		OilQuality:     oilQuality,
-		OilWearFactor:  reelOilWearFactor(oilQuality),
-		CastFriction:   reelCastFriction(bearingQuality, oilQuality, durability),
+		ReelGUID:          row.GUID,
+		UID:               row.UID,
+		BaseDragKg:        base,
+		LockedDragKg:      base * reelLockMultiplier(dragDurability) * bearingFactor,
+		Durability:        durability,
+		BearingItemID:     bearingItemID,
+		BearingQuality:    bearingQuality,
+		BearingFactor:     bearingFactor,
+		OilItemID:         oilItemID,
+		OilQuality:        oilQuality,
+		OilWearFactor:     reelOilWearFactor(effectiveOilQuality),
+		CastFriction:      reelCastFriction(bearingQuality*bearingDurability, effectiveOilQuality, spoolDurability),
+		SpoolDurability:   spoolDurability,
+		DragDurability:    dragDurability,
+		BearingDurability: bearingDurability,
+		OilDurability:     oilDurability,
+		GearDurability:    gearDurability,
 	}
 	v.CastEfficiency = 1 - v.CastFriction
 	// 重算改装参数时不能清掉尚未跨档的润滑磨损进度。
-	if old, err := s.DB.GetReelPerformance(ctx, row.GUID); err == nil && old != nil {
+	if old != nil {
 		v.WearProgress = old.WearProgress
+		v.LineOutM, v.RetrieveM, v.DragWork = old.LineOutM, old.RetrieveM, old.DragWork
 	}
 	if err := s.DB.UpsertReelPerformance(ctx, *v); err != nil {
 		return nil, err

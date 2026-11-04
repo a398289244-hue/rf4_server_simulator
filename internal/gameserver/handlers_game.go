@@ -707,6 +707,13 @@ func hCast(ctx *Ctx) ([]byte, bool) {
 	st.mu.Lock()
 	st.GearGuid = gear
 	st.CastPosX, st.CastPosZ, st.HasCastPos = castX, castZ, hasCastPos
+	// 新一杆不能继承上一杆的线长基线或尚未落库的搏鱼积分。
+	st.FightDistanceSeen = false
+	st.FightLastDistance = 0
+	st.FightLastTension = 0
+	st.FightElapsed = 0
+	st.FightWear = reelWearDelta{}
+	st.FightWearSince = time.Time{}
 	st.mu.Unlock()
 	if err := ctx.Sess.prepareBaitForCast(st, gear); err != nil {
 		ctx.Log.Warn("抛竿前补饵失败", "err", err)
@@ -745,6 +752,10 @@ func hCast(ctx *Ctx) ([]byte, bool) {
 		"max_m", math.Round(profile.DistanceM*100)/100, "action", action,
 		"action_factor", math.Round(castActionFactor(action)*1000)/1000,
 		"power_ratio", math.Round(powerRatio*1000)/1000)
+	if _, err := srv.applyReelWear(ctx.Sess.pushCtx(), ctx.Sess.Userid, gear,
+		castReelWear(requestedM, powerRatio), ""); err != nil {
+		ctx.Log.Warn("抛投渔轮磨损未保存", "err", err)
+	}
 	// 主线版本会无条件记录当前饵，供路亚咬钩规则和持久化状态使用。
 	bait := srv.currentBait(ctx.Sess.pushCtx(), gear)
 	st.mu.Lock()
@@ -893,6 +904,7 @@ func hFishingStep(ctx *Ctx) ([]byte, bool) {
 	// 14/7：obj lobemkloehp f5=anim 位掩码；0x200=MotionlessInWaterColumn（水中静止）
 	if ctx.Tree != nil {
 		if o := findObj(ctx.Tree, "lobemkloehp"); o != nil && o.FieldCount() > 5 {
+			ctx.Sess.Srv.recordFightStep(ctx.Sess, o)
 			anim := u32Of(o.Field(5).Num)
 			settled := anim&rigAnimSettledMask != 0
 			var seq uint64
@@ -965,6 +977,7 @@ func hFishingPull(ctx *Ctx) ([]byte, bool) {
 	// 客户端在本地播放杆梢动作，这条命令是 fire-and-forget 通知，不需要回包。
 	// 先原样记录请求体，便于确认两种手势的参数差异。
 	ctx.Log.Info("14/9 抬杆/小刺", "len", len(ctx.Body), "hex", traceHexHead(ctx.Body, 96))
+	ctx.Sess.Srv.recordPullShock(ctx.Sess, ctx.Sess.Srv.stateFor(ctx.Sess.Userid))
 	return nil, true
 }
 
@@ -978,6 +991,7 @@ func hFishingHooked(ctx *Ctx) ([]byte, bool) {
 	castActive := st.CastActive
 	resolved := st.Resolved
 	st.mu.Unlock()
+	srv.startReelFight(ctx.Sess, st, gear)
 	if pending != nil {
 		if err := srv.consumeHookedBait(ctx.Sess, pending, gear); err != nil {
 			ctx.Log.Warn("中鱼后鱼饵扣减失败", "fish", pending.FishGUID, "err", err)
@@ -1000,6 +1014,8 @@ func hFishingLeft(ctx *Ctx) ([]byte, bool) {
 	//   其他：保守按本轮没有鱼处理。
 	srv := ctx.Sess.Srv
 	st := srv.stateFor(ctx.Sess.Userid)
+	// 鱼离场前先结算自上次批量写入后的线杯、摩擦片、轴承和齿轮工作量。
+	srv.flushReelFightWear(ctx.Sess, st)
 	f0 := uint32(0)
 	if ctx.Tree != nil {
 		if o := findObj(ctx.Tree, "lhicjpmglbo"); o != nil && o.FieldCount() > 0 {
@@ -1074,6 +1090,7 @@ func hFishingLoad(ctx *Ctx) ([]byte, bool) {
 func hFishingEnd(ctx *Ctx) ([]byte, bool) {
 	// 收竿：钓组离水，清掉“在水中/挂起”状态。
 	st := ctx.Sess.Srv.stateFor(ctx.Sess.Userid)
+	ctx.Sess.Srv.flushReelFightWear(ctx.Sess, st)
 	st.mu.Lock()
 	st.InWater = false
 	st.NeedBite = false

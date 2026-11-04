@@ -73,6 +73,7 @@ type Server struct {
 	drinkRunOnce  sync.Once
 	drinkKey      string
 	drinkMu       sync.Mutex
+	reelWearMu    sync.Mutex
 
 	// 引线制作：普通主线 -> 前导线定义的静态映射缓存。
 	leaderWireMu     sync.Mutex

@@ -274,12 +274,16 @@ func TestReelOverloadUsesDurabilityStages(t *testing.T) {
 		t.Fatalf("轮子超载结果错误: %+v", outcome)
 	}
 	fresh, _ := db.GetItemByGUID(ctx, reel.GUID)
-	if math.Abs(fresh.Durability-0.8) > 1e-9 {
-		t.Fatalf("轮子耐久=%f，期望 0.8", fresh.Durability)
+	if fresh.Durability >= 1 || fresh.Durability < .995 {
+		t.Fatalf("单次超载应是小幅连续磨损，实得=%f", fresh.Durability)
 	}
 	perf, _ := db.GetReelPerformance(ctx, reel.GUID)
-	if math.Abs(perf.LockedDragKg-perf.BaseDragKg*1.3*perf.BearingFactor) > 0.001 {
-		t.Fatalf("80%% 耐久锁轮参数错误: %+v", perf)
+	if !(perf.DragDurability < perf.SpoolDurability && perf.GearDurability < 1 && perf.OilDurability < 1) {
+		t.Fatalf("超载没有分配到摩擦片/齿轮/润滑油: %+v", perf)
+	}
+	wantLocked := perf.BaseDragKg * reelLockMultiplier(perf.DragDurability) * perf.BearingFactor
+	if math.Abs(perf.LockedDragKg-wantLocked) > 0.001 {
+		t.Fatalf("摩擦片耐久未参与锁轮承力: %+v", perf)
 	}
 	if got, _ := db.GetItemByGUID(ctx, reel.GUID); got == nil {
 		t.Fatal("轮子超载只掉耐久，不应从钓组删除")
@@ -294,28 +298,29 @@ func TestHighQualityReelOilSlowsStageWear(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Zeiman 原厂油品质 70，单次只累计 18% 档位磨损，不应立即掉 20% 耐久。
+	// Zeiman 原厂油品质 70，超载应是连续小幅磨损，不应整档扣 20%。
 	if _, err := srv.damageReelOverload(ctx, uid, zeroGUID, reel.GUID); err != nil {
 		t.Fatal(err)
 	}
 	fresh, _ := db.GetItemByGUID(ctx, reel.GUID)
-	if math.Abs(fresh.Durability-1.0) > 1e-9 {
-		t.Fatalf("高品质油首次超载耐久=%f，期望仍为1.0", fresh.Durability)
+	if fresh.Durability >= 1 || fresh.Durability < .995 {
+		t.Fatalf("高品质油首次超载磨损异常=%f", fresh.Durability)
 	}
 	perf, _ := db.GetReelPerformance(ctx, reel.GUID)
-	if perf.OilQuality != 70 || math.Abs(perf.WearProgress-0.18) > 1e-9 {
+	wantOilFactor := reelOilWearFactor(perf.OilQuality * perf.OilDurability)
+	if perf.OilQuality != 70 || math.Abs(perf.OilWearFactor-wantOilFactor) > 1e-9 || perf.OilWearFactor < .9 {
 		t.Fatalf("高品质油首次磨损累计错误: %+v", perf)
 	}
 	if _, err := srv.damageReelOverload(ctx, uid, zeroGUID, reel.GUID); err != nil {
 		t.Fatal(err)
 	}
 	fresh, _ = db.GetItemByGUID(ctx, reel.GUID)
-	if math.Abs(fresh.Durability-0.8) > 1e-9 {
-		t.Fatalf("高品质油第二次超载耐久=%f，期望0.8", fresh.Durability)
+	if fresh.Durability < .99 {
+		t.Fatalf("两次轻度超载不应爆轮，耐久=%f", fresh.Durability)
 	}
 	perf, _ = db.GetReelPerformance(ctx, reel.GUID)
-	if math.Abs(perf.WearProgress-0.16) > 1e-9 {
-		t.Fatalf("跨档后剩余磨损累计错误: %+v", perf)
+	if perf.DragDurability >= 1 || perf.GearDurability >= 1 || perf.BearingDurability >= 1 {
+		t.Fatalf("连续超载未累计到分部件: %+v", perf)
 	}
 }
 
