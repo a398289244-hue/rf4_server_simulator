@@ -1372,9 +1372,11 @@ func hFishingLeft(ctx *Ctx) ([]byte, bool) {
 		st.Resolved = false
 		castActive := st.CastActive
 		inWater := st.InWater
+		loc, spot := st.Loc, st.Spot
 		st.mu.Unlock()
 		if hooked && !alreadyResolved {
 			srv.bumpFishingCounter(ctx.Sess.Userid, "escapes")
+			srv.recordHuntEscape(ctx.Sess.pushCtx(), ctx.Sess.Userid, loc, spot, pending)
 			srv.notifyFishEscape(ctx.Sess, pending, "脱钩离开")
 			ctx.Log.Info("14/12 已中鱼跑鱼，按真脱钩播报", "f0", f0)
 		} else {
@@ -1389,12 +1391,14 @@ func hFishingLeft(ctx *Ctx) ([]byte, bool) {
 	st.cancelPendingTimerLocked()
 	pending := st.Pending
 	alreadyResolved := st.Resolved
+	loc, spot := st.Loc, st.Spot
 	st.Resolved = true
 	st.Pending = nil
 	st.CastActive = false
 	st.mu.Unlock()
 	srv.bumpFishingCounter(ctx.Sess.Userid, "escapes")
 	if !alreadyResolved {
+		srv.recordHuntEscape(ctx.Sess.pushCtx(), ctx.Sess.Userid, loc, spot, pending)
 		srv.notifyFishEscape(ctx.Sess, pending, "脱钩离开")
 	}
 	return nil, true
