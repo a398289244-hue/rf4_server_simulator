@@ -169,7 +169,7 @@ A = `FUN_180007750(buf, 0, classRef)`（按类型取场景对象），B = `FUN_1
 3. **对照原生服务端**：若官方服务端在线，用它打一发看方向是否正确；正确 = 还缺某条别的下发消息，
    可继续补；不正确 = 游戏本身的怪癖
 
-探针与逆向料：`rf4_launcher_re\_target.js` + `_fr_target.py`（哨兵 `_fr_target_stop` 干净退出）；
-Ghidra 工程 `C:\rf4_rea_ghidra_project\rf4-il2cpp` + 探针 `C:\rf4_gh_work\targets.txt` → `gh_out.txt`。
+探针与逆向料：抛饵目标点探针脚本（Frida，写 `_fr_target_stop` 哨兵文件即干净退出）与
+对应的 IL2CPP Ghidra 工程，都在本机逆向目录，未随仓库发布。
 Frida 17 的坑：`Interceptor.attach` 的 `onEnter` 第一个参数是**参数数组**，寄存器必须走 `this.context.rcx`，
 读错就是每发都 `RangeError: invalid array index`（今天在这上面耗了三轮）。
