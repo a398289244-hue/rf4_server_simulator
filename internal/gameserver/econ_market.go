@@ -1350,6 +1350,10 @@ func hWorkshopOrder(ctx *Ctx) ([]byte, bool) {
 		if _, perr := srv.syncReelPerformance(cctx, row); perr != nil {
 			ctx.Log.Warn("工坊换件：轮子物理参数保存失败", "guid", shortGUID(row.GUID), "err", perr)
 		}
+
+		// 本体那一格是轮内零件的综合：换掉烧穿的摩擦片必须能把它抬回来，
+		// 否则“换件修好”永远修不好。
+		srv.recalcReelBodyDurability(cctx, row)
 	}
 	out, terr := srv.ItemToTree(cctx, row)
 	if terr != nil {
@@ -1441,11 +1445,23 @@ func hWorkshopRepair(useGold bool) Handler {
 		}
 		// 恢复耐久，保留工艺质量。
 		beforeDurability := row.Durability
+		if def, derr := srv.itemDefForRow(cctx, row); derr == nil && def != nil && def.Category == gearCatReel {
+			// 渔轮是机械总成：进店修理要把里面烧掉的摩擦片与磨旧零件一并恢复，
+			// 只把本体写回 1.0 的话，制动力还是 0，轮子照样收不了线。
+			srv.restoreReelInternals(cctx, row)
+		}
+
 		if err := srv.DB.SetItemDurability(cctx, guid, 1.0); err != nil {
 			ctx.Log.Warn("修理耐久写库失败", "guid", shortGUID(guid), "err", err)
 			return nil, false
 		}
 		row.Durability = 1.0
+		if def, derr := srv.itemDefForRow(cctx, row); derr == nil && def != nil && def.Category == gearCatReel {
+			// 物理参数表也要跟着回满：搏鱼结算优先读这张表，它不刷新就会继续按磨损后的承力裁决。
+			if _, perr := srv.syncReelPerformance(cctx, row); perr != nil {
+				ctx.Log.Warn("修理：轮子物理参数保存失败", "guid", shortGUID(row.GUID), "err", perr)
+			}
+		}
 		if err := srv.DB.AddItemDamageLog(cctx, store.ItemDamageLog{
 			UID: ctx.Sess.Userid, ItemGUID: guid, ItemID: row.ItemID, Event: damageEventRepair,
 			BeforeDurability: ptrFloat64(beforeDurability), AfterDurability: ptrFloat64(1.0),

@@ -317,8 +317,10 @@ func TestReelSlipDegradesFrictionWasherByStep(t *testing.T) {
 		t.Fatal(err)
 	}
 	fresh, _ := db.GetItemByGUID(ctx, reel.GUID)
-	if math.Abs(fresh.Durability-1.0) > 1e-9 {
-		t.Fatalf("首次打滑轮子耐久=%f，期望仍为1.0（磨摩擦片不是本体）", fresh.Durability)
+	// 本体那一格是零件综合：磨掉 0.5% 摩擦片，外面最多随它的权重降 0.125%，
+	// 不会把本体一次性打掉；但它确实会动，不再是“磨件不伤本体”。
+	if fresh.Durability >= 1 || fresh.Durability < 1-reelBodyWeightWasher*reelSlipWear-1e-9 {
+		t.Fatalf("首次打滑后本体耐久=%f，应只随摩擦片权重微降", fresh.Durability)
 	}
 	after, perr := srv.syncReelPerformance(ctx, fresh)
 	if perr != nil {

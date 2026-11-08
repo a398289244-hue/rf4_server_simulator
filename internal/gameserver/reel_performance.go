@@ -228,9 +228,49 @@ func (s *Server) degradeFrictionWasher(ctx context.Context, reel *store.Item) (w
 	return s.degradeFrictionWasherBy(ctx, reel, reelSlipWear)
 }
 
-// degradeFrictionWasherBy 泄力打滑与锁轮过载都会让摩擦片(cat9)发热磨损，其制动力
-// csDragForce 按 wear（寿命比例）线性衰减。返回 wornOut（磨穿、制动力归零、泄力
-// 失效）和是否真的找到了摩擦片子件。找不到子件时调用方回退到本体耐久通道。
+// degradeFrictionWasherFields 在内存中的零件树上磨摩擦片：制动力 csDragForce 按 wear
+// （寿命比例）线性衰减，并把耐久字段写成等比剩余值——裁决与承力只认制动力，但背包与工坊要能看到损耗百分比。
+// 返回 wornOut（制动力归零、泄力失效）与 found（是否找到摩擦片子件）；找不到时调用方回退本体耐久通道。
+func (s *Server) degradeFrictionWasherFields(ctx context.Context, reel *store.Item,
+	fields []proto.Field, wear float64) (wornOut bool, found bool) {
+	if reel == nil {
+		return false, false
+	}
+	child, def, _, ok := s.selectedReelPart(ctx, fields, reelPartCatWasher)
+	if !ok || child == nil {
+		return false, false
+	}
+	cur, present, idx := frictionWasherDrag(child)
+	if idx < 0 || idx >= len(child.Fields) {
+		return false, true
+	}
+	maxDrag := itemDefF32(def, gearAttrDragMax) * reel.Workmanship
+	if maxDrag <= 0 {
+		return false, true
+	}
+	if !present {
+		// 只有"字段缺失"才用零件定义值初始化；存量零值由一次性迁移处理。
+		cur = maxDrag
+	} else if cur <= 0 {
+		// 字段存在且为 0 = 已磨穿。泄力失效必须保持，下一次打滑不能复活制动力。
+		return true, true
+	}
+	if wear > 0 {
+		// 线性磨损：按寿命比例烧掉额制制动力的一小份。
+		next := cur - maxDrag*wear
+		if next < 0 {
+			next = 0
+		}
+		setWireFloat(child.Fields, child.Class, idx, next)
+		cur = next
+	}
+	// 摩擦片耐久字段是制动力剩余比例的镜像：工坊与背包靠它显示损耗%。
+	setReelChildDurability(child, reelWasherLife(cur, maxDrag))
+	return cur <= 0, true
+}
+
+// degradeFrictionWasherBy 磨一次摩擦片并落库（单独改物品树的入口）。
+// 拼接型结算（零件耐久与本体聚合要同一次写入）走 degradeFrictionWasherFields。
 func (s *Server) degradeFrictionWasherBy(ctx context.Context, reel *store.Item, wear float64) (wornOut bool, found bool, err error) {
 	if reel == nil {
 		return false, false, nil
@@ -239,40 +279,16 @@ func (s *Server) degradeFrictionWasherBy(ctx context.Context, reel *store.Item, 
 	if err != nil {
 		return false, false, err
 	}
-	child, def, _, ok := s.selectedReelPart(ctx, fields, reelPartCatWasher)
-	if !ok || child == nil {
+	wornOut, found = s.degradeFrictionWasherFields(ctx, reel, fields, wear)
+	if !found {
 		return false, false, nil
 	}
-	cur, present, idx := frictionWasherDrag(child)
-	if idx < 0 || idx >= len(child.Fields) {
-		return false, true, nil
-	}
-	maxDrag := itemDefF32(def, gearAttrDragMax) * reel.Workmanship
-	if maxDrag <= 0 {
-		return false, true, nil
-	}
-	if !present {
-		// 只有"字段缺失"才用零件定义值初始化；存量零值由一次性迁移处理。
-		cur = maxDrag
-	} else if cur <= 0 {
-		// 字段存在且为 0 = 已磨穿。泄力失效必须保持，下一次打滑不能复活制动力。
-		return true, true, nil
-	}
-	// 线性磨损：按寿命比例烧掉额定制动力的一小份。
-	if wear <= 0 {
-		return cur <= 0, true, nil
-	}
-	next := cur - maxDrag*wear
-	if next < 0 {
-		next = 0
-	}
-	setWireFloat(child.Fields, child.Class, idx, next)
 	bumpCreatedTicks(fields, reel.WireClass)
 	fj, err := FieldsToJSON(fields)
 	if err != nil {
 		return false, true, err
 	}
-	// Persist the root scale and worn washer together using the updated parts.
+	// 摩擦片与母轮受力上限要一起写，不能只写子件。
 	snapshot := *reel
 	snapshot.FieldsJSON = fj
 	if s.canonicalizeReelStrength(ctx, &snapshot, fields) {
@@ -285,7 +301,7 @@ func (s *Server) degradeFrictionWasherBy(ctx context.Context, reel *store.Item, 
 		return false, true, err
 	}
 	reel.FieldsJSON = fj
-	return next <= 0, true, nil
+	return wornOut, true, nil
 }
 
 // reelPartQualityFromRow 读取轮子当前内嵌零件及静态品质。没有该零件时返回
@@ -423,20 +439,9 @@ func (s *Server) reelPartStateFromRow(ctx context.Context, row *store.Item, cate
 	if !found || child == nil {
 		return itemID, quality, durability
 	}
-	idx := fieldIdxByCS(child.Class, csDurability)
-	if idx < 0 || idx >= child.FieldCount() {
-		return itemID, quality, durability
-	}
-	switch fieldOpAt(child.Class, idx) {
-	case "FLOAT", "DOUBLE":
-		// 与摩擦片同一口径：FLOAT 的 0 视为未初始化，不能当成"已经磨完"。
-		if v := child.Fields[idx].Float; v > 0 {
-			durability = math.Min(1, v)
-		}
-	default:
-		// U32 承载 F32 位型：字段存在即已初始化，0 是真实状态（磨完/干涸）。
-		durability = clampUnit(childWireFloat(child, csDurability))
-	}
+	// 字段缺失与 FLOAT 的 0 都按满耐久（历史存档没写过该字段），
+	// 只有 U32 承载的 0 才是真的磨完/干涸。
+	durability = reelChildDurability(child)
 	return itemID, quality, durability
 }
 
