@@ -392,7 +392,16 @@ func (s *Server) recordFightReelLoad(ctx *Ctx) {
 // 本体耐久取 min(现值, 零件聚合值)：只降不升，换件与修理才允许抬回去。
 // event 只用于损伤日志（14/4 收竿、17/9 断件、14/12 鱼离场、14/7 抛竿兜底）。
 func (s *Server) applyFightReelWear(ctx context.Context, uid int64, w fightReelWear, event string) bool {
-	if s == nil || s.DB == nil || w.reelGUID == "" {
+	if s == nil || s.DB == nil {
+		return false
+	}
+	if w.reelGUID == "" && w.rodGUID != "" {
+		// 抛竿只登记了竿：空竿结算要按钓组解析出渔轮，否则每竿基准与泡水会被整笔丢掉。
+		if parsed, perr := s.DB.GetItemGUIDByRigSlot(ctx, w.rodGUID, gearCatReel); perr == nil && parsed != "" {
+			w.reelGUID = parsed
+		}
+	}
+	if w.reelGUID == "" {
 		return false
 	}
 	wear := clampUnit(w.SlipWear + w.BurnWear)
@@ -494,6 +503,10 @@ func (s *Server) settleFightReelWearState(ctx context.Context, st *FishState, ui
 	}
 	st.mu.Lock()
 	w, ok := st.reelWear.claimLocked()
+	if w.rodGUID == "" {
+		// 账上只有竿 GUID 时也能结算：状态里的竿就是这一竿的钓组。
+		w.rodGUID = st.GearGuid
+	}
 	st.mu.Unlock()
 	if !ok {
 		return

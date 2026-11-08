@@ -200,7 +200,7 @@ func TestBurnedWasherBreaksReel(t *testing.T) {
 		t.Fatalf("摩擦片烧穿后本体耐久应熔断到 0，实得 %v", row.Durability)
 	}
 	// 收不了线必须能修回来：换件与进修理都允许把本体抬回去。
-	if !srv.restoreReelInternals(ctx, row) {
+	if changed, rerr := srv.restoreReelInternals(ctx, row); !changed || rerr != nil {
 		t.Fatal("修理应恢复轮内零件")
 	}
 	row = wearReelRow(t, db, ctx, reelGUID)

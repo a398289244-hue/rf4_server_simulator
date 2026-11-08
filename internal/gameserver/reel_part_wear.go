@@ -283,14 +283,15 @@ func (s *Server) recalcReelBodyDurability(ctx context.Context, row *store.Item) 
 
 // restoreReelInternals 进店修理渔轮时把轮内零件一并恢复：摩擦片制动力回到额定、其余件
 // 耐久回满。本体修好了但摩擦片还是 0 的话，轮子照样收不了线，修理就成了白扣钱。
-// 只改零件字段，本体耐久由调用方按修理流程写。
-func (s *Server) restoreReelInternals(ctx context.Context, row *store.Item) bool {
+// 只改零件字段，本体耐久由调用方按修理流程写。老档没有轮内零件时 changed=false 且
+// err=nil，修理照常生效；写库失败必须让调用方放弃这次修理，别只把本体刷回满值。
+func (s *Server) restoreReelInternals(ctx context.Context, row *store.Item) (bool, error) {
 	if s == nil || s.DB == nil || row == nil {
-		return false
+		return false, nil
 	}
 	fields, err := FieldsFromJSON(row.FieldsJSON)
 	if err != nil {
-		return false
+		return false, err
 	}
 	changed := false
 	child, def, _, ok := s.selectedReelPart(ctx, fields, reelPartCatWasher)
@@ -315,23 +316,23 @@ func (s *Server) restoreReelInternals(ctx context.Context, row *store.Item) bool
 		}
 	}
 	if !changed {
-		return false
+		return false, nil
 	}
 	bumpCreatedTicks(fields, row.WireClass)
 	fj, err := FieldsToJSON(fields)
 	if err != nil {
-		return false
+		return false, err
 	}
 	snapshot := *row
 	snapshot.FieldsJSON = fj
 	if s.canonicalizeReelStrength(ctx, &snapshot, fields) {
 		if fj, err = FieldsToJSON(fields); err != nil {
-			return false
+			return false, err
 		}
 	}
 	if err := s.DB.UpdateItemFields(ctx, row.GUID, fj, row.Qty, row.Durability, row.Workmanship, row.RigGUID); err != nil {
-		return false
+		return false, err
 	}
 	row.FieldsJSON = fj
-	return true
+	return true, nil
 }
