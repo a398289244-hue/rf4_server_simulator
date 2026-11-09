@@ -119,17 +119,15 @@ func TestGroundRodWithoutFallbackNeverRollsFish(t *testing.T) {
 	step.Main, step.Sub, step.Sess = 14, 7, sess
 	hFishingStep(step)
 
-	time.Sleep(400 * time.Millisecond)
-	held.mu.Lock()
-	heldGot := held.Pending != nil && held.Pending.GearGUID == heldRod
-	held.mu.Unlock()
-	if !heldGot {
+	// 两条计时器都在后台 goroutine 跑；CI 机器繁忙时固定睡 400ms 可能还没轮到，
+	// 按状态轮询而不是赌调度速度。
+	if !rodWaitUntil(func() bool {
+		f := rodPendingFish(held)
+		return f != nil && f.GearGUID == heldRod
+	}, 5*time.Second) {
 		t.Fatal("手持竿应正常派鱼")
 	}
-	ground.mu.Lock()
-	needBite, pending := ground.NeedBite, ground.Pending
-	ground.mu.Unlock()
-	if pending != nil || !needBite {
-		t.Fatalf("兜底关闭时地上竿应仍是旧行为（挂着等入水、不派鱼）need_bite=%v pending=%+v", needBite, pending)
+	if !rodWaitUntil(func() bool { return rodStillWaiting(ground) }, 5*time.Second) {
+		t.Fatalf("兜底关闭时地上竿应挂着等入水：pending=%+v", rodPendingFish(ground))
 	}
 }
