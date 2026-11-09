@@ -1412,9 +1412,12 @@ func hFishingLeft(ctx *Ctx) ([]byte, bool) {
 	//   f0=6：鱼实体已经进入当前钓组，等待玩家刺鱼；不能重推或清 Hooked，
 	//          否则海钓会每 6 秒重复生成同一尾鱼并锁住右键抬竿。
 	//   f0=1/2/8：当前鱼未中钩离场；钓组仍在水中时重新等待下一尾；
+	//   以上这些帧只对拿在手上的那根管数；放在地上的竿只要鱼已中钩就不判跑鱼。
 	//   其他：保守按本轮没有鱼处理。
 	srv := ctx.Sess.Srv
 	st := srv.fishingStateForRequest(ctx)
+	// 先在没拿 st.mu 的时候解出"手上那根"的键，进到锁内只比字符串，避免锁序反过来。
+	heldKey := srv.heldRodKey(ctx.Sess.Userid)
 	f0 := uint32(0)
 	if ctx.Tree != nil {
 		if o := findObj(ctx.Tree, "lhicjpmglbo"); o != nil && o.FieldCount() > 0 {
@@ -1441,6 +1444,20 @@ func hFishingLeft(ctx *Ctx) ([]byte, bool) {
 		// 状态上报不得清掉这尾鱼，否则结算无处安放（幽灵鱼）。
 		ctx.Log.Info("14/12 已结算渔获等待处理，忽略状态上报", "f0", f0)
 		st.mu.Unlock()
+		return nil, true
+	}
+	// 放在地上的那根竿没有人在管泄力和收线张力。只要这尾鱼已经中钩（服务端记的
+	// 14/11 确认），松线、一直拉着、客户端把鱼实体退回来，都不算跑鱼：留着这尾鱼
+	// 等玩家取竿，取起来再按正常搏鱼处理。少爷实机实测：水底竿刚中钩就被一条张力
+	// 帧判成跑鱼，人还没走到竿边鱼就没了。
+	if st.Hooked && rodOnGround(heldKey, st) &&
+		(f0 == 1 || f0 == 2 || f0 == 3 || f0 == 5 || f0 == 8) {
+		fish := ""
+		if st.Pending != nil {
+			fish = shortGUID(st.Pending.FishGUID)
+		}
+		st.mu.Unlock()
+		ctx.Log.Info("14/12 竿不在手上，已中钩的鱼不判跑鱼", "f0", f0, "fish", fish)
 		return nil, true
 	}
 	if f0 == 6 {

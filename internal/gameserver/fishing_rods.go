@@ -44,6 +44,23 @@ func (s *Server) fishingState(uid int64) *FishState {
 	return rods[s.heldFishingRods[uid]]
 }
 
+// heldRodKey 返回"正拿在手上那根竿"的状态键。调用方拿到返回值之后在自己那行状
+// 态的 mu 里比 persist.rodGUID 即可，切勿在持有 st.mu 时调用本函数（fishMu 与
+// st.mu 的锁序会反过来，会死锁）。
+func (s *Server) heldRodKey(uid int64) string {
+	s.fishMu.Lock()
+	defer s.fishMu.Unlock()
+	return s.heldFishingRods[uid]
+}
+
+// rodOnGround 在调用方已持有 st.mu 时判断这根竿是否不在手上。放在地上的竿没有人
+// 在管泄力和收线张力，所以它的鱼不能按搏鱼张力帧判成跑鱼，否则玩家根本来不及取
+// 竿；只有一根竿且从没换过手时无从区分，按手上处理。
+func rodOnGround(heldKey string, st *FishState) bool {
+	key := st.persist.rodGUID
+	return key != "" && key != heldKey
+}
+
 func (s *Server) fishingStatesFor(uid int64) []*FishState {
 	s.fishingState(uid)
 	s.fishMu.Lock()
