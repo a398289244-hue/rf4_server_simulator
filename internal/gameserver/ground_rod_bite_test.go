@@ -133,4 +133,3 @@ func TestGroundRodWithoutFallbackNeverRollsFish(t *testing.T) {
 		t.Fatalf("兜底关闭时地上竿应仍是旧行为（挂着等入水、不派鱼）need_bite=%v pending=%+v", needBite, pending)
 	}
 }
-
