@@ -354,11 +354,18 @@ func hookSolidHold(weightG int64, spec gearPhysicsSpec) (solid, hold float64) {
 		solid *= .55 + 1.8*r
 	}
 	solid = groundbaitClamp(solid, .15, .96)
-	hold = groundbaitClamp(.98-.30*math.Max(0, r-1), .50, .98)
+	if r <= 1 {
+		// 鱼重没有超过钩型入口容量时，既然已经中钩，就不再做随机保钩失败。
+		// 这样正常鱼不会因为 2% 掷骰在 1~2 秒后突然脱钩；只有明显超过钩容量的
+		// 鱼才按超载程度降低保持率。
+		hold = 1
+	} else {
+		hold = groundbaitClamp(.98-.30*(r-1), .50, .98)
+	}
 	return
 }
 
-func applyHookBiteQuality(f *RolledFish, spec gearPhysicsSpec) {
+func (s *Server) applyHookBiteQuality(f *RolledFish, spec gearPhysicsSpec) {
 	if f == nil {
 		return
 	}
@@ -370,6 +377,9 @@ func applyHookBiteQuality(f *RolledFish, spec gearPhysicsSpec) {
 		return
 	}
 	solid, hold := hookSolidHold(f.WeightG, spec)
+	if p, ok := s.hookBiteProfileFor(spec.HookItemID); ok {
+		solid, hold = applyHookBiteProfile(f.WeightG, spec, p, solid, hold)
+	}
 	f.HookHoldP = hold
 	if rand.Float64() > solid {
 		f.BiteQuality = "nibble"

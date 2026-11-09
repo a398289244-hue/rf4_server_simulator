@@ -116,7 +116,7 @@ func TestFishHuntBlueProbabilityIsHookIndependent(t *testing.T) {
 func TestLuckProtectedBlueBypassesHookQuality(t *testing.T) {
 	tiny := gearPhysicsSpec{HookPresent: true, HookSize: 0, HookLengthMM: 1.8}
 	f := &RolledFish{Grade: 4, WeightG: 500_000}
-	applyHookBiteQuality(f, tiny)
+	(&Server{}).applyHookBiteQuality(f, tiny)
 	if !f.LuckProtected || f.BiteQuality != "solid" || f.HookHoldP != 1 {
 		t.Fatalf("蓝冠天命鱼必须绕过钩型判定: %+v", f)
 	}
@@ -418,6 +418,16 @@ func TestHookQualityPrefersDifferentFishSizes(t *testing.T) {
 	}
 	if solid, _ := hookSolidHold(20_000, tiny); solid >= .9 {
 		t.Fatalf("小钩遇 20kg 大鱼不应有稳定入口，solid=%.2f", solid)
+	}
+}
+
+func TestHookHoldOnlyFailsAboveHookCapacity(t *testing.T) {
+	large := gearPhysicsSpec{HookPresent: true, HookSize: 28, HookLengthMM: 24}
+	if _, hold := hookSolidHold(100_000, large); hold != 1 {
+		t.Fatalf("钩容量内中钩后应固定保持率 1，实得 %.4f", hold)
+	}
+	if _, hold := hookSolidHold(200_000, large); hold >= 1 {
+		t.Fatalf("超过钩容量后保持率应下降，实得 %.4f", hold)
 	}
 }
 
