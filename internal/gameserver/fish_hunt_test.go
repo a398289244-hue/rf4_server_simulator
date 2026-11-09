@@ -8,21 +8,8 @@ import (
 	"time"
 
 	"rf4server/internal/proto"
+	"rf4server/internal/store"
 )
-
-func setHookNibbleVeto(t *testing.T, s *Server, enabled bool) {
-	t.Helper()
-	value := "0"
-	if enabled {
-		value = "1"
-	}
-	if err := s.DB.TunableSet(t.Context(), "hook_nibble_veto", value, "test"); err != nil {
-		t.Fatal(err)
-	}
-	s.tunMu.Lock()
-	s.tunAt = time.Time{}
-	s.tunMu.Unlock()
-}
 
 func TestFishHuntStageWeights(t *testing.T) {
 	tests := []struct {
@@ -35,7 +22,7 @@ func TestFishHuntStageWeights(t *testing.T) {
 		{fishHuntGiant, 10, 64, 20, 6},
 	}
 	for _, tc := range tests {
-		w1, w2, w3, w4, force := fishHuntWeights(tc.stage, &fishHuntState{}, 0, .5, false)
+		w1, w2, w3, w4, force := fishHuntWeights(tc.stage, &fishHuntState{}, 0, false)
 		if force || math.Abs(w1-tc.w1) > 1e-9 || math.Abs(w2-tc.w2) > 1e-9 ||
 			math.Abs(w3-tc.w3) > 1e-9 || math.Abs(w4-tc.w4) > 1e-9 {
 			t.Fatalf("stage=%d weights=(%.1f,%.1f,%.1f,%.1f) force=%v", tc.stage, w1, w2, w3, w4, force)
@@ -44,11 +31,11 @@ func TestFishHuntStageWeights(t *testing.T) {
 }
 
 func TestFishHuntPityForcesTrophy(t *testing.T) {
-	_, _, _, _, force := fishHuntWeights(fishHuntActive, &fishHuntState{Pity: 60}, 0, .5, false)
+	_, _, _, _, force := fishHuntWeights(fishHuntActive, &fishHuntState{Pity: 60}, 0, false)
 	if !force {
 		t.Fatal("60 尾未出奖杯时必须触发奖杯硬保底")
 	}
-	_, _, w3, _, force := fishHuntWeights(fishHuntActive, &fishHuntState{Pity: 30}, 0, .5, false)
+	_, _, w3, _, force := fishHuntWeights(fishHuntActive, &fishHuntState{Pity: 30}, 0, false)
 	if force || w3 <= 6.8 {
 		t.Fatalf("30 尾软保底应提高奖杯权重，w3=%.2f force=%v", w3, force)
 	}
@@ -96,7 +83,25 @@ func TestHuntBaitMultiplierKeepsSelectedGrade(t *testing.T) {
 	}
 }
 
-func TestFishHuntBlueProbabilityIsHookIndependent(t *testing.T) {
+func TestHookSpawnCompatibilityPrefersMatchingFish(t *testing.T) {
+	small := gearPhysicsSpec{HookPresent: true, HookSize: 6, HookLengthMM: 3.3}
+	large := gearPhysicsSpec{HookPresent: true, HookSize: 14, HookLengthMM: 6}
+	huge := gearPhysicsSpec{HookPresent: true, HookSize: 28, HookLengthMM: 24}
+	if got := hookSpawnCompatibility(300, small); got != 1 {
+		t.Fatalf("6 号钩遇 300g 应完全匹配，实得 %.3f", got)
+	}
+	if got := hookSpawnCompatibility(1737, small); got >= .40 {
+		t.Fatalf("6 号钩遇 1737g 应显著降权，实得 %.3f", got)
+	}
+	if got := hookSpawnCompatibility(1737, large); got < .95 {
+		t.Fatalf("14 号钩遇 1737g 应基本匹配，实得 %.3f", got)
+	}
+	if got := hookSpawnCompatibility(50, huge); got >= .60 {
+		t.Fatalf("特大钩遇 50g 应降权，实得 %.3f", got)
+	}
+}
+
+func TestHookSpawnMatchBiasesGradesAndPreservesBlue(t *testing.T) {
 	blueProbability := func(w1, w2, w3, w4 float64) float64 {
 		total := w1 + w2 + w3 + w4
 		if total <= 0 {
@@ -111,19 +116,47 @@ func TestFishHuntBlueProbabilityIsHookIndependent(t *testing.T) {
 	}{
 		{name: "active", h: &fishHuntState{}},
 		{name: "giant", h: &fishHuntState{Pity: 55}},
-		{name: "hardPity", h: &fishHuntState{Pity: 60}},
 		{name: "blueComp", h: &fishHuntState{CompFish: 4, CompGrade: 4}, comp: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			small1, small2, small3, small4, _ := fishHuntWeights(fishHuntActive, tc.h, 0, .1, tc.comp)
-			large1, large2, large3, large4, _ := fishHuntWeights(fishHuntActive, tc.h, 0, .9, tc.comp)
-			smallP := blueProbability(small1, small2, small3, small4)
-			largeP := blueProbability(large1, large2, large3, large4)
-			if math.Abs(smallP-largeP) > 1e-12 {
-				t.Fatalf("归一化后的蓝冠概率不能受钩型影响: small=%.12f large=%.12f", smallP, largeP)
+			w1, w2, w3, w4, _ := fishHuntWeights(fishHuntActive, tc.h, 0, tc.comp)
+			before := blueProbability(w1, w2, w3, w4)
+			small1, small2, small3, small4 := w1, w2, w3, w4
+			applyHookSpawnMatch(&small1, &small2, &small3, &small4, [4]float64{1, .5, .1, 1}, 1)
+			large1, large2, large3, large4 := w1, w2, w3, w4
+			applyHookSpawnMatch(&large1, &large2, &large3, &large4, [4]float64{.2, .5, 1, 1}, 1)
+			if small3/small1 >= large3/large1 {
+				t.Fatalf("小钩应降低奖杯相对权重: small=%.3f large=%.3f", small3/small1, large3/large1)
+			}
+			for name, w := range map[string][4]float64{
+				"small": {small1, small2, small3, small4},
+				"large": {large1, large2, large3, large4},
+			} {
+				if got := blueProbability(w[0], w[1], w[2], w[3]); math.Abs(got-before) > 1e-12 {
+					t.Fatalf("%s 软匹配改变了蓝冠概率: before=%.12f after=%.12f", name, before, got)
+				}
 			}
 		})
+	}
+}
+
+func TestHookNibbleSwitchKeepsProfileHoldMultiplier(t *testing.T) {
+	s := &Server{
+		tunCache: map[string]float64{tunableHookNibbleEnabled: 0},
+		tunAt:    time.Now(),
+		hookProfiles: map[string]store.HookBiteProfile{
+			"small": {ItemID: "small", SolidScale: 1, HoldScale: .5},
+		},
+	}
+	spec := gearPhysicsSpec{HookPresent: true, HookItemID: "small", HookSize: 6, HookLengthMM: 3.3}
+	f := &RolledFish{Grade: 2, WeightG: 1737}
+	s.applyHookBiteQuality(f, spec)
+	if f.BiteQuality != "solid" {
+		t.Fatalf("关闭嘬饵后不得再产生 nibble: %+v", f)
+	}
+	if math.Abs(f.HookHoldP-.25) > 1e-9 {
+		t.Fatalf("后台保持率倍率仍应生效，HookHoldP=%.4f", f.HookHoldP)
 	}
 }
 
@@ -226,7 +259,6 @@ func TestUnhookedTrophyUnknownFrameDoesNotGrantEscapeCompensation(t *testing.T) 
 
 func TestNibbleDoesNotEnterHookedState(t *testing.T) {
 	s, _ := newRigTestServer(t)
-	setHookNibbleVeto(t, s, true)
 	sess, _ := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{Species: "crucian", Grade: 1, WeightG: 120,
@@ -248,44 +280,28 @@ func TestNibbleDoesNotEnterHookedState(t *testing.T) {
 	}
 }
 
-func TestHookQualityDefaultsToClientTrust(t *testing.T) {
-	s, _ := newRigTestServer(t)
-	tiny := gearPhysicsSpec{
-		HookPresent: true, HookItemID: "tiny-test",
-		HookSize: 0, HookLengthMM: 1.8,
-	}
-	f := &RolledFish{Species: "carp", Grade: 2, WeightG: 12_000}
-	s.applyHookBiteQuality(f, tiny)
-	if f.BiteQuality != "solid" || f.HookHoldP != 1 {
-		t.Fatalf("默认模式必须信任客户端咬钩: quality=%s hold=%.2f",
-			f.BiteQuality, f.HookHoldP)
-	}
-}
-
-func TestNibbleVetoDisabledTrustsClientBite(t *testing.T) {
+func TestDisabledNibbleStillHooksPendingNibble(t *testing.T) {
 	s, _ := newRigTestServer(t)
 	sess, _ := newTunnelProbe(t, s)
+	setWeatherTestTunable(t, s, tunableHookNibbleEnabled, "0")
 	st := s.stateFor(sess.Userid)
-	fish := &RolledFish{
-		FishGUID: "1411feed1411feed1411feed1411feed",
-		Species:  "carp", Grade: 2, WeightG: 12_000,
-		BiteQuality: "nibble", HookHoldP: .15,
-	}
+	fish := &RolledFish{Species: "crucian", Grade: 1, WeightG: 120,
+		BiteQuality: "nibble", HookHoldP: 1}
 	st.mu.Lock()
-	st.GearGuid = "ddd00000ddd00000ddd00000ddd00000"
 	st.CastActive, st.InWater, st.Resolved, st.Pending = true, true, false, fish
 	st.mu.Unlock()
 
 	if _, ok := hFishingHooked(miscCtx(sess, 14, 11, nil)); !ok {
-		t.Fatal("14/11 未处理")
+		t.Fatal("关闭嘬饵后的 14/11 处理失败")
 	}
 	st.mu.Lock()
-	kept := st.Pending == fish && st.Hooked
+	hooked := st.Hooked && st.Pending == fish && fish.HookConfirmed
 	st.cancelBiteTimerLocked()
 	st.cancelPendingTimerLocked()
 	st.mu.Unlock()
-	if !kept {
-		t.Fatal("关闭事后嘬饵否决后，客户端确认的鱼必须进入中钩状态")
+	if !hooked {
+		t.Fatalf("关闭嘬饵后，在途 nibble 也必须正常中钩: pending=%v hooked=%v confirmed=%v",
+			st.Pending != nil, st.Hooked, fish.HookConfirmed)
 	}
 }
 
@@ -325,7 +341,6 @@ func TestDuplicateHookedConfirmationIsIdempotent(t *testing.T) {
 
 func TestMarineNibbleDoesNotEnterHookedState(t *testing.T) {
 	s, _ := newRigTestServer(t)
-	setHookNibbleVeto(t, s, true)
 	sess, _ := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{Species: "atl_cod", Grade: 2, WeightG: 4200,
@@ -352,7 +367,6 @@ func TestMarineNibbleDoesNotEnterHookedState(t *testing.T) {
 // 鼓里继续搏鱼，拖到岸边收竿 14/4 落空，鱼凭空消失（2026-11-08 23:24/23:26 实证）。
 func TestNibbleVetoPushesFishLeave(t *testing.T) {
 	s, _ := newRigTestServer(t)
-	setHookNibbleVeto(t, s, true)
 	sess, gc := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{FishGUID: "1411feed1411feed1411feed1411feed", Species: "crucian", Grade: 1, WeightG: 120,
@@ -392,7 +406,6 @@ func TestNibbleVetoPushesFishLeave(t *testing.T) {
 
 func TestMarineNibbleVetoPushesFishLeave(t *testing.T) {
 	s, _ := newRigTestServer(t)
-	setHookNibbleVeto(t, s, true)
 	sess, gc := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{FishGUID: "149feed0149feed0149feed0149feed0", Species: "atl_cod", Grade: 2, WeightG: 4200,
@@ -422,7 +435,6 @@ func TestMarineNibbleVetoPushesFishLeave(t *testing.T) {
 // 不清刚重排的咬钩 timer，不把本竿标记为终局，也不产生任何推送。
 func TestNibbleVetoLeaveAckBenign(t *testing.T) {
 	s, _ := newRigTestServer(t)
-	setHookNibbleVeto(t, s, true)
 	sess, gc := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{FishGUID: "abcd0000abcd0000abcd0000abcd0000", Species: "crucian", Grade: 1, WeightG: 120,
@@ -547,6 +559,78 @@ func TestFishHuntReadinessRequiresFishMouthMatch(t *testing.T) {
 	}
 	if r.E < .45 && r.Stage != fishHuntDaily {
 		t.Fatalf("鱼口匹配不足时必须守住日常阶段，实得 E=%.2f stage=%s", r.E, fishHuntStageName(r.Stage))
+	}
+}
+
+func TestLureHuntBuildsBigFishProgressWithoutGroundbait(t *testing.T) {
+	s, _ := newRigTestServer(t)
+	ctx := t.Context()
+	const (
+		uid  = int64(1000009)
+		loc  = "lure-hunt-test"
+		spot = uint64(7)
+	)
+	c := fishRollContext{
+		uid: uid, loc: loc, x: 300, z: 300, hasPos: true, spot: spot,
+		rigType: 5, lureAction: "steady", lureLayer: .45,
+		now: time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC), cache: newFishingRollCache(),
+		weather: fishingWeather{known: true, kind: fishingWeatherClear, airTemp: 20, previousAirTemp: 20, wind: 2},
+	}
+	h := &fishHuntState{
+		UID: uid, Loc: loc, Spot: spot, Mode: fishHuntModeLure,
+		ActiveSeconds: 1800, ValidBites: 30,
+	}
+	r := s.fishHuntReadiness(ctx, "perch", c, h)
+	if r.Stage != fishHuntGiant {
+		t.Fatalf("路亚持续搜索不应依赖窝料，stage=%s A=%.2f E=%.2f G=%.2f Q=%.2f",
+			fishHuntStageName(r.Stage), r.A, r.E, r.G, r.Q)
+	}
+	if h.Mode != fishHuntModeLure {
+		t.Fatalf("路亚应记录独立狩猎模式: %+v", h)
+	}
+}
+
+func TestLureHuntDoesNotStartAtGiantWithoutProgress(t *testing.T) {
+	s, _ := newRigTestServer(t)
+	ctx := t.Context()
+	const (
+		uid  = int64(1000010)
+		loc  = "lure-hunt-fresh"
+		spot = uint64(7)
+	)
+	c := fishRollContext{
+		uid: uid, loc: loc, x: 300, z: 300, hasPos: true, spot: spot,
+		rigType: 5, lureAction: "steady", lureLayer: .45,
+		now: time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC), cache: newFishingRollCache(),
+		weather: fishingWeather{known: true, kind: fishingWeatherClear, airTemp: 20, previousAirTemp: 20, wind: 2},
+	}
+	h := &fishHuntState{UID: uid, Loc: loc, Spot: spot, Mode: fishHuntModeLure}
+	r := s.fishHuntReadiness(ctx, "perch", c, h)
+	if r.Stage == fishHuntGiant {
+		t.Fatalf("刚换路亚不应直接进入巨物阶段: A=%.2f G=%.2f Q=%.2f", r.A, r.G, r.Q)
+	}
+}
+
+func TestSwitchingFromGroundbaitToLureResetsSharedProgress(t *testing.T) {
+	s, _ := newRigTestServer(t)
+	ctx := t.Context()
+	const (
+		uid  = int64(1000011)
+		loc  = "lure-mode-switch"
+		spot = uint64(7)
+	)
+	c := fishRollContext{
+		uid: uid, loc: loc, x: 300, z: 300, hasPos: true, spot: spot,
+		rigType: 5, lureAction: "steady", lureLayer: .45,
+		now: time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC), cache: newFishingRollCache(),
+	}
+	h := &fishHuntState{
+		UID: uid, Loc: loc, Spot: spot, Mode: fishHuntModeFreshwater,
+		ActiveSeconds: 1800, ValidBites: 30,
+	}
+	s.fishHuntReadiness(ctx, "perch", c, h)
+	if h.Mode != fishHuntModeLure || h.ActiveSeconds != 0 || h.ValidBites != 0 {
+		t.Fatalf("切到路亚时不能继承窝料发窝进度: %+v", h)
 	}
 }
 

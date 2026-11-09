@@ -300,13 +300,36 @@ func (s *Server) dedupeRigComponents(ctx context.Context, uid int64, parentGUID 
 }
 
 // extraIsTargetIndex 判断组件当前 Extra 是否已是钓组模板声明的合法槽位索引。
+// 海钓钩位的 1000+ 客户端槽位索引不属于模板，但同样是客户端认定的有效槽位，
+// 必须一并认作合法，否则 rigSetTarget 会把它当成无效索引走「找空闲序号」分支。
 func extraIsTargetIndex(category, extra, rigType int64) bool {
+	if hookSlotIndexNamespace(category, extra) {
+		return true
+	}
 	for _, idx := range slotIndicesFor(rigType, category) {
 		if extra == idx {
 			return true
 		}
 	}
 	return false
+}
+
+// hookSlotIndexNamespace 判断 (品类, 索引) 是否落在客户端的海钓钩位子槽命名空间。
+//
+// 客户端 RigMarineBase.faocjcaiac 从 1009 起每次 −4 遍历到 1001 构造钩组件，
+// 因此 1000 基址上一组钩位是 1001/1005/1009。实机日志进一步确认每组钩位下
+// 还有子槽：首钩位加钩上报 1001、首钩位装拟饵上报 1002（2026-11-09 20:57:37
+// slot=17 extra=1002）；同一族里 1006/1010 是第二/第三钩位的拟饵子槽。
+//
+// 拟饵(17)必须一起放行：只放行钩(12) 时，1002 会被 canonicalIndexForOrdinal
+// 按 ordinal 改写成 rig 50 的模板首索引 300，与柳叶亮片的 300 撞车——亮片被
+// 去重退回背包，客户端在自己的 1002 槽位找不到组件，整组判无效（钩子、鱼片、
+// 吸引成分一起变黑）。这是 2026-11-09 实机事故的直接原因。
+func hookSlotIndexNamespace(category, extra int64) bool {
+	if category != catHook && category != catLure {
+		return false
+	}
+	return extra >= 1000
 }
 
 // releaseDedupedComponent 将被清理的组件实例退回背包或来源堆，
@@ -430,6 +453,16 @@ func canonicalIndexForOrdinal(category, clientIndex, rigType, ordinal int64) int
 			return 351
 		}
 		return 350
+	}
+	// 客户端对海钓钩位使用独立的 1000+ 槽位命名空间（实机日志实测
+	// 1001/1005/1009 钩位，1002 首钩位拟饵子槽）。它们不属于
+	// rigSlotTemplates 里声明的 250/251/252 或 300/325/326，
+	// 但客户端按自己的索引渲染：改写成模板首索引会让客户端在自己的槽位上
+	// 找不到组件，整组判无效（槽位变灰、钩装不上）。这类索引必须原样保留。
+	// 只放行钩(12) 会把拟饵的 1002 改写成 300，与柳叶亮片撞车并把它挤掉，
+	// 所以拟饵(17)必须一并放行；其他品类仍走模板规范化。
+	if hookSlotIndexNamespace(category, clientIndex) {
+		return clientIndex
 	}
 	if rigType != 0 {
 		idxs := slotIndicesFor(rigType, category)
@@ -1544,6 +1577,12 @@ func (s *Server) rigSetTarget(ctx context.Context, parentGUID string, slot int64
 			}
 		}
 	}
+	// 海钓钩位的 1000+ 客户端槽位索引是独立命名空间，不受模板声明的
+	// 槽位个数限制：模板只声明了 250 一个钩位，但倒钓臂展开后客户端会
+	// 用 1001/1005/1009 等索引装多个钩；每个钩位下还带拟饵子槽（1002/1006/
+	// 1010）。若沿用 len(idxs) 当上限，第二件就会被判「无空闲槽」而顶掉
+	// 第一件（三个钩位都装不上，或拟饵把亮片顶掉）。
+	highIndexSlot := hookSlotIndexNamespace(slot, extra)
 	if extra != 0 {
 		// 同一规范索引已装：走替换，保留其序号与原组件 GUID。
 		for key, c := range comps {
@@ -1555,7 +1594,7 @@ func (s *Server) rigSetTarget(ctx context.Context, parentGUID string, slot int64
 			}
 		}
 		// 空闲槽位：写入未占用的序号，实际索引仍由 extra 决定。
-		if extraIsTargetIndex(slot, extra, rt) && count < limit {
+		if (highIndexSlot || extraIsTargetIndex(slot, extra, rt)) && (highIndexSlot || count < limit) {
 			return freeOrdinal(), ""
 		}
 	}
@@ -1797,6 +1836,7 @@ type rigDetachResult struct {
 	CompGUID     string       // 被拆下的组件 guid
 	DeletedGUID  string       // 整条删除的子实例 guid（f2 移除段素材；退回路径为空）
 	ReturnedTree *proto.Value // 退回背包物品的新树（f1 更新段素材）
+	RefundTree   *proto.Value // 拆出厂钩物化退包的新物品树（新 guid → f0 新增段素材）
 	SourceTree   *proto.Value // 拆分子实例来源堆 +1 后的新树（f1 更新段素材）
 	SourceGUID   string       // 拆分子实例的来源堆 guid（回包后强制刷新客户端计数）
 }
@@ -2883,7 +2923,11 @@ func hRigBaitMount(ctx *Ctx) ([]byte, bool) {
 }
 
 // hLureSetComp 处理 15/1：[容器, 父 GUID, 容器, 物品 GUID, int]。
-// 请求不带槽位，尾部整数作为 extra 保存；返回全量快照。
+// 尾部 int 是 0 基槽位下标（客户端 dump：agfonbnkeoh.dihplofkffm 按
+// 数组 Length 循环 new ogilnngmlnp(父, i)，i 即下标；发送端
+// bbpmdcodcee.hbckkobipmd 把它作为最后一个参数）。旧实现读 ints[1]
+// ——那是容器枚举，永远解析不中，多槽拟饵只能换活动钩 0。
+// 返回全量快照；钩的列表归属回包后用 4/21+4/22 重建。
 func hLureSetComp(ctx *Ctx) ([]byte, bool) {
 	srv := ctx.Sess.Srv
 	if !srv.requireDB(ctx) {
@@ -2894,18 +2938,40 @@ func hLureSetComp(ctx *Ctx) ([]byte, bool) {
 		return emptyArgsBody(), true
 	}
 	extra := int64(0)
-	if len(ints) > 1 {
-		extra = int64(ints[1])
+	if len(ints) > 0 {
+		extra = int64(ints[len(ints)-1])
 	}
+	ctx.Log.Info("15/1 拟饵换钩请求", "lure", shortGUID(guids[0]), "hook", shortGUID(guids[1]), "ints", ints)
 	cctx := ctx.Sess.pushCtx()
 	res := srv.rigSetComponent(cctx, ctx.Sess.Userid, guids[0], 0, guids[1], extra,
 		rigSetOpts{ParentType: familyLure, EnforceCategory: true, SplitStack: true})
-	body, err := proto.EncodeValue(srv.buildRigSnapshotFull(cctx, ctx.Sess.Userid), ctx.Sess.Table())
+	// 三段增量响应（与 17/2 装配件同构）：f0=新装钩树+出厂钩退包新物品，
+	// f1=拟饵/退回旧钩树。全量快照会把同 guid 树放进 f0 新增段，客户端
+	// 面板与背包都不按预期刷新（rigops.go 13/1 教训）。
+	var snap *proto.Value
+	if res.hasMaterials() {
+		snap = buildRigSnapshot800(res.AddedTrees, res.UpdatedTrees, res.RemovedGUIDs)
+	} else {
+		snap = srv.buildRigSnapshotFull(cctx, ctx.Sess.Userid)
+	}
+	body, err := proto.EncodeValue(snap, ctx.Sess.Table())
 	if err != nil {
 		return nil, false
 	}
 	srv.queueSplitSourceRefresh(ctx, res)
 	srv.queueReleasedStackRefresh(ctx, res.Released)
+	// 被替换的玩家钩（带物品行）从拟饵挪回背包：f1 更新段不重建列表
+	// 归属，补一次 4/21+4/22。新装钩由响应 f0 完成归属重建、出厂钩退包
+	// 是新 guid 走 f0——这两者绝不能推送：重加新装钩会让客户端把它挂回
+	// 背包（v4 实测），清合成 GUID 会让注册表查不到重物化的钩。
+	if res.ReplacedGUID != "" {
+		for _, t := range res.UpdatedTrees {
+			if treeRootGUID(t) == res.ReplacedGUID {
+				srv.queueStackRefresh(ctx, []string{res.ReplacedGUID}, []*proto.Value{t})
+				break
+			}
+		}
+	}
 	return body, true
 }
 
@@ -2968,12 +3034,76 @@ func hRigRemoveCompFamily(ctx *Ctx) ([]byte, bool) {
 		extra = int64(ints[2])
 	}
 	cctx := ctx.Sess.pushCtx()
-	srv.rigRemoveComponentInstance(cctx, ctx.Sess.Userid, guids[0], slot, itemGUID, extra)
+	res := srv.rigRemoveComponentInstance(cctx, ctx.Sess.Userid, guids[0], slot, itemGUID, extra)
+	// 拟饵拆钩走三段增量（与 17/3 同构）：f1=拟饵+退回钩树刷新详情面板
+	// 与背包；f0=出厂钩退包的新物品；f2 为空（退回不删除）。全量快照的
+	// 同 guid f0 段不刷新客户端；对正展示中的拟饵发 4/21 移除则会把
+	// 详情页弹回背包界面（2026-11-09 两轮实机验证）。
+	var snap *proto.Value
+	if res != nil && isLureGUID(cctx, srv, guids[0]) {
+		detachTrees := srv.lureDetachTrees(cctx, guids[0], res)
+		var added []*proto.Value
+		if res.RefundTree != nil {
+			added = append(added, res.RefundTree)
+		}
+		snap = buildRigSnapshot800(added, detachTrees, res.removedGUIDs())
+		body, err := proto.EncodeValue(snap, ctx.Sess.Table())
+		if err != nil {
+			return nil, false
+		}
+		// 仅当被拆的是玩家钩（带物品行、ReturnedTree 非空）时补 4/21+4/22
+		// 重进背包列表——f1 更新段不重建列表归属。拟饵树、出厂钩合成 GUID、
+		// 退包新实例一律不推：拟饵重加会弹掉详情页、清合成 GUID 会让注册
+		// 表查不到重物化的钩（v1/v4 两轮实测）。
+		if res.ReturnedTree != nil && res.CompGUID != "" {
+			srv.queueStackRefresh(ctx, []string{res.CompGUID}, []*proto.Value{res.ReturnedTree})
+		}
+		return body, true
+	}
 	body, err := proto.EncodeValue(srv.buildRigSnapshotFull(cctx, ctx.Sess.Userid), ctx.Sess.Table())
 	if err != nil {
 		return nil, false
 	}
 	return body, true
+}
+
+// treeRootGUID 提取树根对象的 GUID 字段；读不出返回空串。
+func treeRootGUID(t *proto.Value) string {
+	if t == nil || t.Kind != proto.KindObj {
+		return ""
+	}
+	if i := fieldIdxByCS(t.Class, csGUID); i >= 0 && i < len(t.Fields) && t.Fields[i].Hex != "" {
+		return t.Fields[i].Hex
+	}
+	return ""
+}
+
+// isLureGUID 判断 guid 是否为拟饵实例（读不到或非拟饵返回 false）。
+func isLureGUID(ctx context.Context, srv *Server, guid string) bool {
+	row, err := srv.DB.GetItemByGUID(ctx, guid)
+	return err == nil && isLureRow(row)
+}
+
+// lureTreeByGUID 重新读取拟饵实例的完整树；读不到返回 nil。
+func (s *Server) lureTreeByGUID(ctx context.Context, guid string) *proto.Value {
+	row, err := s.DB.GetItemByGUID(ctx, guid)
+	if err != nil || row == nil {
+		return nil
+	}
+	t, err := s.itemTree(ctx, row)
+	if err != nil {
+		return nil
+	}
+	return t
+}
+
+// lureDetachTrees 组装 15/2 拟饵拆钩响应的 f1 更新段：退回钩树 + 拟饵树。
+func (s *Server) lureDetachTrees(ctx context.Context, lureGUID string, res *rigDetachResult) []*proto.Value {
+	updated := res.trees()
+	if t := s.lureTreeByGUID(ctx, lureGUID); t != nil {
+		updated = append(updated, t)
+	}
+	return updated
 }
 
 // hHanditemSetComp 处理 13/1：[容器, 父 GUID, 容器, 物品 GUID]。
@@ -3113,16 +3243,43 @@ func baitSlotCount(rigType int64) int {
 	return max(2, len(slotIndicesFor(rigType, catHook)))
 }
 
-// hookPositionsFor 返回钓组的钩位数量——决定挂饵是否按钩拆组。
+// baitSlotCountIn 是 baitSlotCount 的运行时版本：饵位数量必须覆盖实际钩位，
+// 否则钩序号大于 1 的钩上断饵后，rebait:<钩序号> 记录永远读不到、补不上饵。
+func baitSlotCountIn(rigType int64, comps map[int64]rigComp) int {
+	return max(2, hookPositionsIn(rigType, comps))
+}
+
+// hookPositionsFor 返回钓组模板声明的钩位数量。
 //
 // 只数 catHook 槽位。拟饵族（catLure=17）在同一品类下同时承载“亮片”和
 // “基本吸引成分/钓钩吸引成分/鱼片”这些挂件，海钓铁板族因此有 300+325+
 // 326+327 多个拟饵槽位，但钩位始终只有一个。把拟饵槽位数并进来会把单钩
 // 铁板竿误判成多钩：挂饵分组被拆碎，判鱼时每组各选一次。
+//
+// 这是静态上限；运行时钩位数见 hookPositionsIn。
 func hookPositionsFor(rigType int64) int {
 	n := len(slotIndicesFor(rigType, catHook))
 	if n < 1 {
 		return 1
+	}
+	return n
+}
+
+// hookPositionsIn 返回运行时钩位数：模板声明数与 f5 实际已装钩组件的较大者。
+//
+// 海钓倒钓臂展开后，客户端会往 f5 里装 250/1001/1005/1009 多条 catHook
+// 组件（logs/gameserver.log 2026-11-09 10:26:54–10:28:59 实测四条共存）。
+// 服务端没有单独的“倒钓臂已展开”开关事件：钩组件本身就是运行时状态，
+// 因此钩位数只能按实际组件数取，不能只看 rigSlotTemplates（rig 50/51
+// 模板只声明 250 一个钩位）。只看模板会把多钩当单钩：所有饵并进第一枚钩，
+// 其余钩永远不判鱼、不吃饵、断件也不算。
+//
+// 取较大者是为了兼容模板已声明多钩位的钓组（如 rig 59 的 250/251/252）：
+// 钩还没装满时不能因为实际少了几条就把上限缩小。
+func hookPositionsIn(rigType int64, comps map[int64]rigComp) int {
+	n := hookPositionsFor(rigType)
+	if k := len(rigCompKeysOfCategory(comps, catHook)); k > n {
+		return k
 	}
 	return n
 }

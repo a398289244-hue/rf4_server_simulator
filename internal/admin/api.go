@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -100,6 +101,10 @@ func NewServer(cfg config.Admin, db *store.DB, log logger, webFS fs.FS) *Server 
 	mux.HandleFunc("GET /api/hooks/profiles", auth(s.handleHookProfiles))
 	mux.HandleFunc("POST /api/hooks/profiles", auth(s.handleHookProfileSave))
 	mux.HandleFunc("GET /api/bait/prefs", auth(s.handleBaitPrefs))
+	mux.HandleFunc("GET /api/bait/items", auth(s.handleBaitItems))
+	mux.HandleFunc("GET /api/bait/categories", auth(s.handleBaitCategories))
+	mux.HandleFunc("PUT /api/bait/rules", auth(s.handleBaitRuleSave))
+	mux.HandleFunc("POST /api/bait/rules/reset", auth(s.handleBaitRuleReset))
 	mux.HandleFunc("POST /api/mail/send", auth(s.handleMailSend))
 	mux.HandleFunc("GET /api/audit", auth(s.handleAudit))
 	mux.HandleFunc("GET /api/about", auth(s.handleAbout))
@@ -311,9 +316,16 @@ func (s *Server) handleTunableSet(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 400, "参数错误")
 		return
 	}
-	if (req.Key == "fish_ecology_enabled" || req.Key == "fish_bait_rules_enabled" || req.Key == "fish_distribution_enabled" || req.Key == "fish_weather_enabled" || req.Key == "happy_hour_enabled" || req.Key == "hook_nibble_veto" || req.Key == "grade_ratio_enabled" || req.Key == "event_anniversary_enabled" || req.Key == "event_newyear_enabled") && req.Value != "0" && req.Value != "1" {
+	if (req.Key == "fish_ecology_enabled" || req.Key == "fish_bait_rules_enabled" || req.Key == "fish_distribution_enabled" || req.Key == "fish_weather_enabled" || req.Key == "happy_hour_enabled" || req.Key == "grade_ratio_enabled" || req.Key == "hook_nibble_enabled" || req.Key == "event_anniversary_enabled" || req.Key == "event_newyear_enabled") && req.Value != "0" && req.Value != "1" {
 		httpError(w, 400, "开关只能为 0 或 1")
 		return
+	}
+	if req.Key == "hook_spawn_match_strength" {
+		v, err := strconv.ParseFloat(req.Value, 64)
+		if err != nil || math.IsNaN(v) || math.IsInf(v, 0) || v < 0 || v > 2 {
+			httpError(w, 400, "钩型发鱼软匹配强度必须在 0~2")
+			return
+		}
 	}
 	if req.Key == "event_branches" {
 		if err := validateEventBranches(req.Value); err != nil {
@@ -353,6 +365,7 @@ type playerRow struct {
 	Gold    int64   `json:"gold"`
 	Bank    int64   `json:"bank"`
 	Banned  bool    `json:"banned"`
+	Online  bool    `json:"online"`
 	Updated float64 `json:"updated_ts"`
 }
 
@@ -373,7 +386,42 @@ func (s *Server) handlePlayers(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, err.Error())
 		return
 	}
+	online := s.onlineUIDs(ctx)
+	for i := range rows {
+		rows[i].Online = online[rows[i].UID]
+	}
 	writeJSON(w, rows)
+}
+
+const onlineUIDsMaxAge = 30 * time.Second
+
+type onlineUIDsSnapshot struct {
+	UpdatedAt int64   `json:"updated_at"`
+	UIDs      []int64 `json:"uids"`
+}
+
+// onlineUIDs 读取 gameserver 每 5 秒发布的在线玩家快照；键缺失、格式错误或
+// 快照超过 onlineUIDsMaxAge 时按全部离线处理，避免异常退出后的陈旧名单长期生效。
+func (s *Server) onlineUIDs(ctx context.Context) map[int64]bool {
+	raw, ok, err := s.db.KVGet(ctx, "stats:online_uids")
+	if err != nil || !ok || strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var snap onlineUIDsSnapshot
+	if err := json.Unmarshal([]byte(raw), &snap); err != nil || snap.UpdatedAt <= 0 {
+		return nil
+	}
+	age := time.Since(time.Unix(snap.UpdatedAt, 0))
+	if age < -5*time.Second || age > onlineUIDsMaxAge {
+		return nil
+	}
+	out := make(map[int64]bool, len(snap.UIDs))
+	for _, uid := range snap.UIDs {
+		if uid > 0 {
+			out[uid] = true
+		}
+	}
+	return out
 }
 
 func queryPlayers(ctx context.Context, db *store.DB, out *[]playerRow, q string, args ...any) error {

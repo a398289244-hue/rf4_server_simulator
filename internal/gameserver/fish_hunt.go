@@ -19,12 +19,22 @@ const (
 const (
 	fishHuntModeFreshwater = iota
 	fishHuntModeMarine
+	fishHuntModeLure
 )
 
 const (
 	fishHuntCompWindowSeconds = 10 * 60
 	fishHuntSpotResetM        = 20.0
 )
+
+const (
+	tunableHookNibbleEnabled      = "hook_nibble_enabled"
+	tunableHookSpawnMatchStrength = "hook_spawn_match_strength"
+)
+
+func (s *Server) hookNibbleEnabled() bool {
+	return s == nil || s.tunableF(tunableHookNibbleEnabled, 1) != 0
+}
 
 type fishHuntState struct {
 	UID           int64
@@ -221,6 +231,9 @@ func (s *Server) fishHuntReadiness(ctx context.Context, key string, c fishRollCo
 	if marineHuntContext(c) {
 		return s.fishMarineHuntReadiness(ctx, key, c, h)
 	}
+	if rigTypeLureFamily[c.rigType] {
+		return s.fishLureHuntReadiness(ctx, key, c, h)
+	}
 	return s.fishFreshwaterHuntReadiness(ctx, key, c, h)
 }
 
@@ -303,6 +316,61 @@ func (s *Server) fishMarineHuntReadiness(ctx context.Context, key string, c fish
 	return out
 }
 
+// fishLureHuntReadiness 是路亚族独立的大鱼狩猎进度。路亚不靠窝料把鱼
+// 聚过来，而是靠持续搜索、收线动作和拟饵与水层/鱼种的匹配建立机会。
+// 因此这里不读取 groundbaitSpotAt；窝料只继续影响非路亚钓法。
+func (s *Server) fishLureHuntReadiness(ctx context.Context, key string, c fishRollContext, h *fishHuntState) fishHuntReadiness {
+	out := fishHuntReadiness{Stage: fishHuntDaily}
+	if h == nil || s.DB == nil {
+		return out
+	}
+	if h.Mode != fishHuntModeLure {
+		h.ActiveSeconds, h.ValidBites, h.Pity = 0, 0, 0
+		h.BigMiss, h.CompFish, h.CompGrade, h.CompUntil = 0, 0, 0, 0
+	}
+	h.Mode = fishHuntModeLure
+	s.huntTouch(h)
+
+	out.P = .65*(1-math.Exp(-h.ActiveSeconds/720)) + .35*(1-math.Exp(-float64(h.ValidBites)/12))
+	out.P = groundbaitClamp(out.P, 0, 1)
+	env := s.fishBiteEnvironmentWeight(ctx, key, c)
+	eco := groundbaitClamp((env-.35)/1.65, 0, 1)
+	out.E = groundbaitClamp(.70*eco+.30*.55, 0, 1)
+	water := fishWaterConditionsFor(s.cachedFishEcology(ctx, c, key), c)
+	lure := groundbaitClamp((s.fishLureWeight(s.cachedFishEcology(ctx, c, key), c, water)-.45)/1.05, 0, 1)
+	action := lureHuntActionQuality(c)
+	out.G = groundbaitClamp(.70*lure+.20*action+.10*fishMotionConditionWeight(
+		s.cachedFishEcology(ctx, c, key), c, water), 0, 1)
+	out.A = groundbaitClamp(.28+.55*out.P+.12*lure+.05*action, 0, 1)
+	// 路亚的 Q 是“搜索质量”，不是窝料发窝质量：持续搜索、拟饵匹配和
+	// 环境适配共同决定是否进入聚鱼/巨物阶段。
+	out.Q = groundbaitClamp(.45*out.A+.25*out.E+.30*out.G, 0, 1)
+	out.Comp = h.CompFish > 0 && float64(time.Now().Unix()) <= h.CompUntil
+
+	switch {
+	case out.A < .30 || out.G < .18:
+		out.Stage = fishHuntDaily
+	case out.A >= .68 && out.Q >= .58:
+		out.Stage = fishHuntGiant
+	case out.A >= .50 && out.Q >= .42:
+		out.Stage = fishHuntActive
+	default:
+		out.Stage = fishHuntGather
+	}
+	return out
+}
+
+func lureHuntActionQuality(c fishRollContext) float64 {
+	if c.lureAction == "" {
+		return .45
+	}
+	if c.runtime != nil && c.runtime.lureKnown {
+		weight := lureActionTypeWeight(c.runtime.lure.Type, c.lureAction)
+		return groundbaitClamp((weight-.80)/.54, 0, 1)
+	}
+	return .55
+}
+
 // hookScore 把实际钩号与钩体长度合成为一个连续值；0=小钩，0.5=中钩，1=大钩。
 // 不把钩号直接当阈值，避免同一尺寸族里出现突然断层。
 func hookScore(spec gearPhysicsSpec) float64 {
@@ -338,13 +406,6 @@ func (s *Server) hookBiteDelayFactorForRig(ctx context.Context, uid int64, rod s
 	return hookBiteDelayFactor(s.loadGearSpecForRig(ctx, ids, rod))
 }
 
-// hookNibbleVetoEnabled 控制是否允许服务端在客户端已经发出 14/11 后，
-// 再按钩容量把鱼改判成“只嘬了一口”。默认关闭：正常钓法以客户端咬钩为准，
-// 钩型只参与发鱼权重和真实搏鱼，不再做事后暗判。高级后台需要旧模型时可开。
-func (s *Server) hookNibbleVetoEnabled() bool {
-	return s != nil && s.tunableF("hook_nibble_veto", 0) == 1
-}
-
 // hookSolidHold 返回普通鱼的稳定入口概率与中钩后保持率。
 // 蓝冠不走这里，蓝冠由 luckProtected 直接保送。
 func hookSolidHold(weightG int64, spec gearPhysicsSpec) (solid, hold float64) {
@@ -367,11 +428,83 @@ func hookSolidHold(weightG int64, spec gearPhysicsSpec) (solid, hold float64) {
 		// 鱼才按超载程度降低保持率。
 		hold = 1
 	} else {
-		// 旧模型在 r>1 时下降过快，4kg 鱼配普通钩就可能只剩五成保钩率。
-		// 这里把超载惩罚放缓并把底线抬到 65%，保留装备差异但避免“刚中鱼就掉”。
-		hold = groundbaitClamp(.98-.15*(r-1), .65, .98)
+		hold = groundbaitClamp(.98-.30*(r-1), .50, .98)
 	}
 	return
+}
+
+// hookSpawnCompatibility 是发鱼阶段的几何软匹配权重，只描述鱼重与钩入口容量
+// 的适配程度，不读取后台钩型咬口/保持倍率。小于 1 表示该档位不匹配，但仍
+// 允许以较低权重出现，避免变成按钩号硬截断。
+func hookSpawnCompatibility(weightG int64, spec gearPhysicsSpec) float64 {
+	if weightG <= 0 || !spec.HookPresent {
+		return 1
+	}
+	gape := hookGapeG(spec)
+	if gape <= 0 {
+		return 1
+	}
+	r := float64(weightG) / gape
+	if r < .25 {
+		return groundbaitClamp(.35+2.6*r, .35, 1)
+	}
+	if r <= 1 {
+		return 1
+	}
+	return groundbaitClamp(1/(1+.80*(r-1)), .10, 1)
+}
+
+// applyHookSpawnMatch 对非蓝冠档位应用钩型软匹配，并同比缩放 w4，保持蓝冠
+// 的绝对概率不受钩型影响。strength=0 时不改变任何档位权重。
+func applyHookSpawnMatch(w1, w2, w3, w4 *float64, compat [4]float64, strength float64) {
+	if w1 == nil || w2 == nil || w3 == nil || w4 == nil || strength <= 0 {
+		return
+	}
+	strength = groundbaitClamp(strength, 0, 2)
+	baseNonBlue := *w1 + *w2 + *w3
+	if baseNonBlue <= 0 {
+		return
+	}
+	adjusted := [3]float64{}
+	weights := [3]*float64{w1, w2, w3}
+	matchedNonBlue := 0.0
+	for i := 0; i < 3; i++ {
+		c := groundbaitClamp(compat[i], 0, 1)
+		c = groundbaitClamp(1-strength*(1-c), .02, 1)
+		adjusted[i] = c
+		matchedNonBlue += *weights[i] * c
+	}
+	if matchedNonBlue <= 0 {
+		return
+	}
+	*w4 *= matchedNonBlue / baseNonBlue
+	for i := 0; i < 3; i++ {
+		*weights[i] *= adjusted[i]
+	}
+}
+
+// hookSpawnCompatibilityByGrade 用每个档位的代表重量计算软匹配。档位内部仍
+// 使用原分布；蓝冠档固定为 1，由 applyHookSpawnMatch 单独保持其绝对概率。
+func (s *Server) hookSpawnCompatibilityByGrade(ctx context.Context, c fishRollContext,
+	key string, scale, modeMult float64) [4]float64 {
+	compat := [4]float64{1, 1, 1, 1}
+	if scale <= 0 {
+		scale = 1
+	}
+	mult := 1.0
+	if modeMult > 0 {
+		mult = math.Min(modeMult, 2)
+	}
+	lines := s.cachedSettleStatics(ctx, c, key)
+	for grade := int64(1); grade <= 3; grade++ {
+		_, _, mode, ok := huntBandBounds(float64(lines[0]), float64(lines[1]), float64(lines[2]), grade)
+		if !ok {
+			continue
+		}
+		weight := int64(math.Round(mode * scale * mult))
+		compat[grade-1] = hookSpawnCompatibility(weight, c.hook)
+	}
+	return compat
 }
 
 func (s *Server) applyHookBiteQuality(f *RolledFish, spec gearPhysicsSpec) {
@@ -389,16 +522,8 @@ func (s *Server) applyHookBiteQuality(f *RolledFish, spec gearPhysicsSpec) {
 	if p, ok := s.hookBiteProfileFor(spec.HookItemID); ok {
 		solid, hold = applyHookBiteProfile(f.WeightG, spec, p, solid, hold)
 	}
-	if !s.hookNibbleVetoEnabled() {
-		// 默认信任客户端的咬钩确认。过去这里仍会按钩长³估算入口容量，
-		// 2mm 钩对 1kg 鱼只有约 15% 稳定入口，玩家看到咬钩后点竿却被
-		// 服务端静默否决，体感就是“永远没口/刚上钩就脱”。
-		f.BiteQuality = "solid"
-		f.HookHoldP = 1
-		return
-	}
 	f.HookHoldP = hold
-	if rand.Float64() > solid {
+	if s.hookNibbleEnabled() && rand.Float64() > solid {
 		f.BiteQuality = "nibble"
 	}
 }
@@ -412,6 +537,11 @@ func (s *Server) fishFreshwaterHuntReadiness(ctx context.Context, key string, c 
 	out := fishHuntReadiness{Stage: fishHuntDaily}
 	if h == nil || s.DB == nil || !s.groundbaitEnabled() {
 		return out
+	}
+	// 从路亚搜索切回窝料钓法时，不把路亚的搜索时长直接继承成窝料发窝度。
+	if h.Mode == fishHuntModeLure {
+		h.ActiveSeconds, h.ValidBites, h.Pity = 0, 0, 0
+		h.BigMiss, h.CompFish, h.CompGrade, h.CompUntil = 0, 0, 0, 0
 	}
 	h.Mode = fishHuntModeFreshwater
 	s.huntTouch(h)
@@ -451,7 +581,7 @@ func (s *Server) fishFreshwaterHuntReadiness(ctx context.Context, key string, c 
 	return out
 }
 
-func fishHuntWeights(stage int, h *fishHuntState, trophyLuck, hookMatch float64,
+func fishHuntWeights(stage int, h *fishHuntState, trophyLuck float64,
 	comp bool) (w1, w2, w3, w4 float64, forceTrophy bool) {
 	switch stage {
 	case fishHuntGather:
@@ -479,26 +609,6 @@ func fishHuntWeights(stage int, h *fishHuntState, trophyLuck, hookMatch float64,
 		}
 		if h.Pity >= 60 || h.BigMiss >= 2 {
 			forceTrophy = true
-		}
-	}
-	// 小钩只改变普通入口内部的奖杯占比，不能顺带改变蓝冠的绝对概率。
-	// 非硬保底时按非蓝冠总权重同比缩放 w4；硬保底只比较奖杯/蓝冠，
-	// 因此直接跳过钩型偏置，保持原奖杯与蓝冠比例。
-	if !forceTrophy {
-		baseNonBlue := w1 + w2 + w3
-		hookMatch = groundbaitClamp(hookMatch, 0, 1)
-		if hookMatch < .5 {
-			t := (.5 - hookMatch) / .5
-			w1 *= 1 + .15*t
-			w3 *= 1 - .35*t
-		} else if hookMatch > .5 {
-			t := (hookMatch - .5) / .5
-			w1 *= 1 - .20*t
-			w3 *= 1 + .30*t
-		}
-		biasedNonBlue := w1 + w2 + w3
-		if baseNonBlue > 0 && biasedNonBlue > 0 {
-			w4 *= biasedNonBlue / baseNonBlue
 		}
 	}
 	return
@@ -613,8 +723,11 @@ func (s *Server) sampleHuntBand(ctx context.Context, key string, grade int64, mo
 func (s *Server) sampleHuntWeight(ctx context.Context, key string, modeMult, scale, capG float64, c fishRollContext,
 	h *fishHuntState) (int64, int64, fishHuntReadiness) {
 	readiness := s.fishHuntReadiness(ctx, key, c, h)
-	w1, w2, w3, w4, force := fishHuntWeights(readiness.Stage, h, c.skill.TrophyLuck,
-		hookScore(c.hook), readiness.Comp)
+	w1, w2, w3, w4, force := fishHuntWeights(readiness.Stage, h, c.skill.TrophyLuck, readiness.Comp)
+	if strength := s.tunableF(tunableHookSpawnMatchStrength, 1); strength > 0 && !force {
+		compat := s.hookSpawnCompatibilityByGrade(ctx, c, key, scale, modeMult)
+		applyHookSpawnMatch(&w1, &w2, &w3, &w4, compat, strength)
+	}
 	if capG > 0 {
 		lines := s.cachedSettleStatics(ctx, c, key)
 		if capG/math.Max(scale, .0001) < float64(lines[2]) {

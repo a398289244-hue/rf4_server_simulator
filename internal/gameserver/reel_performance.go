@@ -52,6 +52,13 @@ const (
 	reelPartCatOil     = int64(10) // 轮油
 	reelPartCatHandle  = int64(34) // 摇柄
 	reelPartCatGear    = int64(52) // 齿轮
+	reelPartCatMotor   = int64(81) // 电动轮电机
+)
+
+const (
+	defaultElectricLockedMultiplier = 3.0
+	defaultElectricMotorKgPerPower  = 1.0
+	electricMotorPowerAttr          = "afmboidbbaj"
 )
 
 // clampUnit 把耐久这类 0~1 的剩余比例收进合法区间。
@@ -114,11 +121,89 @@ func reelLockedDragKg(base, durability, bearingFactor, gearFactor float64) float
 	return base * reelLockMultiplier(durability) * bearingFactor * gearFactor
 }
 
-// reelOilWearFactor 返回超载磨损倍率。品质越高，跨过一个 20% 耐久档位
-// 所需的超载次数越多；15 品质约 1.175 倍，100 品质为 0.75 倍。
-func reelOilWearFactor(quality float64) float64 {
+// electricLockedMultiplier 是电轮锁轮有效承力的倍率。默认固定为 3 倍，
+// 但保留数值 tunable，方便后台紧急调整。
+func (s *Server) electricLockedMultiplier() float64 {
+	v := s.tunableF("electric_locked_multiplier", defaultElectricLockedMultiplier)
+	if v < 1 || v > 10 {
+		return defaultElectricLockedMultiplier
+	}
+	return v
+}
+
+func reelMotorQualityFactor(quality float64) float64 {
 	quality = math.Max(0, math.Min(100, quality))
-	return 1.25 - quality/200
+	return 0.85 + 0.15*quality/100
+}
+
+// reelMotorCapacityInFields 计算当前实装电机的有效承力。电机功率字段本身就是
+// F32 位型，当前数据里 rengine_1/rengine_2 分别约 33kg/47kg，因此默认 1:1
+// 映射到承力公斤，同时保留 tunable 供后续按实机表现校准。
+func (s *Server) reelMotorCapacityInFields(ctx context.Context, row *store.Item, fields []proto.Field,
+	bearingFactor, gearFactor float64) (capacity, durability float64, found bool) {
+	if s == nil || row == nil {
+		return 0, 0, false
+	}
+	child, def, _, ok := s.selectedReelPart(ctx, fields, reelPartCatMotor)
+	if !ok || child == nil || def == nil {
+		return 0, 0, false
+	}
+	powerKg := itemDefF32(def, electricMotorPowerAttr)
+	if powerKg <= 0 {
+		return 0, 0, true
+	}
+	scale := s.tunableF("electric_motor_kg_per_power", defaultElectricMotorKgPerPower)
+	if scale <= 0 || scale > 100 {
+		scale = defaultElectricMotorKgPerPower
+	}
+	workmanship, ok := wireFloatAt(child, csWorkmanship)
+	if !ok || workmanship <= 0 {
+		workmanship = 1
+	}
+	durability = reelChildDurability(child)
+	if durability <= 0 {
+		return 0, 0, true
+	}
+	oilDurability := 1.0
+	if oil, _, _, ok := s.selectedReelPart(ctx, fields, reelPartCatOil); ok && oil != nil {
+		oilDurability = reelChildDurability(oil)
+	}
+	oilDrive := 0.90 + 0.10*clampUnit(oilDurability)
+	capacity = powerKg * scale *
+		clampUnit(workmanship) *
+		reelMotorQualityFactor(reelPartQuality(def)) *
+		math.Sqrt(durability) *
+		bearingFactor * gearFactor * oilDrive
+	return capacity, durability, true
+}
+
+// reelEffectiveLockedDragInFields 是电轮锁轮承力的唯一派生入口：
+// 机械承力与电机有效承力取小，再乘实时倍率。普通轮、缺失电机或电机已损坏时
+// 自动退回普通机械锁轮，避免电机归零把手动摇轮也判成 0。
+func (s *Server) reelEffectiveLockedDragInFields(ctx context.Context, row *store.Item, fields []proto.Field,
+	base, durability, bearingFactor, gearFactor float64) float64 {
+	mechanical := reelLockedDragKg(base, durability, bearingFactor, gearFactor)
+	if mechanical <= 0 {
+		return 0
+	}
+	motorCapacity, motorDurability, found := s.reelMotorCapacityInFields(
+		ctx, row, fields, bearingFactor, gearFactor)
+	if !found || motorDurability <= 0 || motorCapacity <= 0 {
+		return mechanical
+	}
+	core := math.Min(mechanical, motorCapacity)
+	if core <= 0 {
+		return mechanical
+	}
+	return s.electricLockedMultiplier() * core
+}
+
+// reelOilWearFactor 返回摩擦片磨损倍率。轮油品质越高、剩余油量越充足，
+// 保护越强；油干涸后有效品质下降，磨损倍率会逐步回到普通水平。
+func reelOilWearFactor(quality, durability float64) float64 {
+	quality = math.Max(0, math.Min(100, quality))
+	effective := quality * (0.5 + 0.5*clampUnit(durability))
+	return 1.25 - effective/200
 }
 
 // reelCastFriction 把轴承品质与耐久、轮油品质与干涸程度、轮子本体耐久换算成放线摩擦
@@ -351,8 +436,9 @@ func (s *Server) reelPartQualityFromRow(ctx context.Context, row *store.Item, ca
 	return "", 100
 }
 
-// syncReelPerformance 重新计算并持久化一只轮子的基础/锁轮承力。
-func (s *Server) syncReelPerformance(ctx context.Context, row *store.Item) (*store.ReelPerformance, error) {
+// buildReelPerformance 按当前物品树计算轮子物理参数，但不写库。
+// 经济事务需要先完成所有依赖 item_def 的读取，再在事务内统一落盘。
+func (s *Server) buildReelPerformance(ctx context.Context, row *store.Item) (*store.ReelPerformance, error) {
 	base := s.reelBaseDragFromRow(ctx, row)
 	bearingItemID, bearingQuality, bearingDurability := s.reelPartStateFromRow(ctx, row, reelPartCatBearing)
 	_, gearQuality, gearDurability := s.reelPartStateFromRow(ctx, row, reelPartCatGear)
@@ -368,24 +454,38 @@ func (s *Server) syncReelPerformance(ctx context.Context, row *store.Item) (*sto
 	if durability > 1 {
 		durability = 1
 	}
+	fields, err := FieldsFromJSON(row.FieldsJSON)
+	if err != nil {
+		return nil, err
+	}
 	v := &store.ReelPerformance{
-		ReelGUID:       row.GUID,
-		UID:            row.UID,
-		BaseDragKg:     base,
-		LockedDragKg:   reelLockedDragKg(base, durability, bearingFactor, gearFactor),
+		ReelGUID:   row.GUID,
+		UID:        row.UID,
+		BaseDragKg: base,
+		LockedDragKg: s.reelEffectiveLockedDragInFields(
+			ctx, row, fields, base, durability, bearingFactor, gearFactor),
 		Durability:     durability,
 		BearingItemID:  bearingItemID,
 		BearingQuality: bearingQuality,
 		BearingFactor:  bearingFactor,
 		OilItemID:      oilItemID,
 		OilQuality:     oilQuality,
-		OilWearFactor:  reelOilWearFactor(oilQuality),
+		OilWearFactor:  reelOilWearFactor(oilQuality, oilDurability),
 		CastFriction:   reelCastFriction(bearingQuality, bearingDurability, oilQuality, oilDurability, durability),
 	}
 	v.CastEfficiency = 1 - v.CastFriction
 	// 重算改装参数时不能清掉尚未跨档的润滑磨损进度。
 	if old, err := s.DB.GetReelPerformance(ctx, row.GUID); err == nil && old != nil {
 		v.WearProgress = old.WearProgress
+	}
+	return v, nil
+}
+
+// syncReelPerformance 重新计算并持久化一只轮子的基础/锁轮承力。
+func (s *Server) syncReelPerformance(ctx context.Context, row *store.Item) (*store.ReelPerformance, error) {
+	v, err := s.buildReelPerformance(ctx, row)
+	if err != nil {
+		return nil, err
 	}
 	if err := s.DB.UpsertReelPerformance(ctx, *v); err != nil {
 		return nil, err
@@ -483,9 +583,13 @@ func (s *Server) reelLockedDragFromRow(ctx context.Context, row *store.Item) flo
 	if row == nil {
 		return 0
 	}
+	fields, err := FieldsFromJSON(row.FieldsJSON)
+	if err != nil {
+		return 0
+	}
 	_, bearingQuality, bearingDurability := s.reelPartStateFromRow(ctx, row, reelPartCatBearing)
 	_, gearQuality, gearDurability := s.reelPartStateFromRow(ctx, row, reelPartCatGear)
-	return reelLockedDragKg(s.reelBaseDragFromRow(ctx, row), row.Durability,
+	return s.reelEffectiveLockedDragInFields(ctx, row, fields, s.reelBaseDragFromRow(ctx, row), row.Durability,
 		reelBearingFactor(bearingQuality, bearingDurability),
 		reelGearFactor(gearQuality, gearDurability))
 }

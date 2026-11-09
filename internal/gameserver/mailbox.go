@@ -168,6 +168,9 @@ func hMailSendMessage(ctx *Ctx) ([]byte, bool) {
 	if toUID == fishQueryContactUID {
 		return srv.receiveFishQuery(ctx, text)
 	}
+	if toUID == gearAssistantUID {
+		return srv.receiveGearAssistant(ctx, text)
+	}
 	if toUID > 0 && toUID != ctx.Sess.Userid {
 		cctx := ctx.Sess.pushCtx()
 		tx, err := beginEconomyTx(cctx, srv.DB)
@@ -348,7 +351,7 @@ func hMailSendItem(ctx *Ctx) ([]byte, bool) {
 	if len(ints) > 1 {
 		count = int64(ints[1])
 	}
-	if toUID <= 0 || toUID == uid || toUID == fishQueryContactUID || guids[0] == "" {
+	if toUID <= 0 || toUID == uid || isVirtualContact(toUID) || guids[0] == "" {
 		body, _ := proto.EncodeValue(out, ctx.Sess.Table())
 		return body, true
 	}
@@ -894,6 +897,9 @@ func (s *Server) execAdminCmd(cmd *AdminCommand) {
 			s.log.Warn("鱼钩型号咬口缓存刷新失败", "err", err)
 		}
 		s.log.Info("管理指令：运行参数已刷新")
+	case "reload_bait_rules":
+		s.invalidateBaitOverrides()
+		s.log.Info("管理指令：鱼饵规则覆盖已刷新")
 	case "fish_tv_test":
 		// 鱼汛通道探测：向指定玩家（0=全部在线会话）推送一条测试消息。
 		var targets []*Session

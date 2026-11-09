@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net"
+	"sort"
 	"sync"
 	"time"
 
@@ -56,6 +57,7 @@ type Server struct {
 	fishStates             map[int64]map[string]*FishState
 	heldFishingRods        map[int64]string
 	fishMu                 sync.Mutex
+	overloadProtectionMu   sync.RWMutex // 在线开关与断件/负载判定同步
 	levelMap               map[int64]string
 	levelMu                sync.Mutex
 	fishEcologyMu          sync.RWMutex
@@ -67,6 +69,11 @@ type Server struct {
 	tunCache map[string]float64
 	tunText  map[string]string
 	tunAt    time.Time
+
+	// 鱼饵规则覆盖缓存（后台可编辑，TTL 兜底 + 写操作主动失效）
+	baitOvMu    sync.RWMutex
+	baitOvCache map[string]baitOverrideEntry
+	baitOvAt    time.Time
 
 	// 搏鱼曲线池
 	curves  map[string][][19]float64
@@ -88,6 +95,12 @@ type Server struct {
 	// 具体鱼钩型号的咬口档案缓存；item_id 命中优先于尺寸默认。
 	hookProfileMu sync.RWMutex
 	hookProfiles  map[string]store.HookBiteProfile
+
+	// 渔轮定义缺少内嵌零件时，按同子类/同系列选取完整轮型作为只读物化模板。
+	// 只缓存静态 item_def，不写入任何玩家物品。
+	reelPartFallbackOnce sync.Once
+	reelPartFallbackDefs []*store.ItemDef
+	reelPartFallbackErr  error
 
 	// 测试注入的随机源；nil 时使用全局 rand。
 	randFloat func() float64
@@ -314,4 +327,21 @@ func (s *Server) SessionCount() int64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return int64(len(s.sessions))
+}
+
+// OnlineUIDs 在线玩家 UID（去重升序，同一玩家的重连会话只算一个；管理后台在线灯用）。
+func (s *Server) OnlineUIDs() []int64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]int64, 0, len(s.sessions))
+	seen := make(map[int64]bool, len(s.sessions))
+	for _, sess := range s.sessions {
+		if sess == nil || sess.Closed() || sess.Userid <= 0 || seen[sess.Userid] {
+			continue
+		}
+		seen[sess.Userid] = true
+		out = append(out, sess.Userid)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
+	return out
 }

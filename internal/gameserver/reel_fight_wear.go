@@ -6,7 +6,8 @@ package gameserver
 // 客户端永远说不出口（实机满红几十秒也不报断件）。代价只能由服务端结算：
 // 未锁轮且鱼拉力高于当前泄力 → 泄力打滑磨摩擦片；锁轮且鱼拉力高于此刻承力 →
 // 按发热曲线烧摩擦片，解锁散热、下次锁轮从曲线开头重新慢慢爬。
-// 节拍跟着客户端 14/8 负载上报：实测搏鱼期间每 1.8~2.0 秒一条，一条算一次判定。
+// 14/8 只作为采样边界：未锁轮打滑按两条上报之间的真实秒数累计，不能把客户端
+// 上报密度直接当成磨损次数。实测节拍 1.8~2.0 秒只用于首条兜底和校准。
 // 过载秒数按服务端收到 14/8 的真实间隔累加，不按“一条上报 = 固定节拍”折算：
 // 实测节拍 1.8~2.0 秒只是客户端的默认节奏，帧率与卡顿都会改变它。
 // 口径见 specs/changes/reel-friction-life-model/spec.md。
@@ -24,6 +25,9 @@ const (
 	// defaultReelLoadTickSeconds 是本竿第一条 14/8 的兜底时长（tunable reel_load_tick_seconds）：
 	// 还没收到过上一条上报时服务端不知道前面已经过了多久，按实测节拍 1.9 秒起算。
 	defaultReelLoadTickSeconds = 1.9
+	// reelSlipCalibrationSeconds 把 29 档单次基准换算成每秒磨损率：
+	// 0.01% / 1.8s = 0.00556%/s，100% 寿命约 5 小时。
+	reelSlipCalibrationSeconds = 1.8
 	// defaultReelLoadMaxTickSeconds 是两条 14/8 之间最多折算的秒数（tunable
 	// reel_load_max_tick_seconds）：客户端卡顿、切场景或掉线会把间隔拉长，超过上限
 	// 就不再补记，宁可少烧一点摩擦片，也不让一条迟到上报把整段发热曲线一次烧完。
@@ -51,10 +55,12 @@ type fightReelWear struct {
 	lockedKg float64 // 锁轮承力（此刻）
 	ratedKg  float64 // 摩擦片额定制动力（含母轮工艺）
 	oilWear  float64 // 轮油磨损倍率：好油 <1，差油 >1
+	oilMatch float64 // 轮油与当前轮子的适配倍率：专用 < 通用 < 不匹配
 	oilBurn  float64 // 轮油对烧穿时长的系数，含轮油自身干涸衰减
 	pullKg   float64 // 服务端已知的鱼拉力（公斤力）
 
 	SlipTicks   int
+	SlipSecs    float64 // 通道一：未锁轮打滑累计的真实秒数
 	SlipWear    float64 // 通道一：泄力打滑累计的寿命比例
 	BurnSecs    float64 // 通道二：锁轮过载累计秒数（跨段，供零件应力账使用）
 	BurnWear    float64 // 通道二：过载曲线累计的寿命比例
@@ -71,6 +77,8 @@ type fightReelWear struct {
 	// 所以做成非导出字段，不进钓组状态的 JSON 快照。
 	lastLoadAt time.Time
 	loadProbe  fightLoadProbe
+	// Preserve the online switch boundary when rebuilding the strength cache.
+	protectionChangedAt time.Time
 }
 
 // reset 清空本竿账本（新的一杆）。
@@ -162,20 +170,17 @@ func (s *Server) reelCastBaseFactor(rigType int64) float64 {
 // 首条上报按 tunable 的兜底节拍起算：在那之前过了多久服务端无从得知。间隔为负
 // （时钟回拨）算 0 秒，超过上限只记上限，免得一条迟到上报把整段发热曲线一次烧完。
 func (w *fightReelWear) loadTickSecondsLocked(now time.Time, def, maxTick float64) float64 {
-	if w.lastLoadAt.IsZero() {
-		return def
+	tick := def
+	if !w.lastLoadAt.IsZero() {
+		tick = math.Max(0, math.Min(now.Sub(w.lastLoadAt).Seconds(), maxTick))
 	}
-	gap := now.Sub(w.lastLoadAt).Seconds()
-	if gap <= 0 {
-		return 0
+	if !w.protectionChangedAt.IsZero() {
+		tick = math.Min(tick, math.Max(0, now.Sub(w.protectionChangedAt).Seconds()))
 	}
-	if gap > maxTick {
-		return maxTick
-	}
-	return gap
+	return tick
 }
 
-// partCounts 把本竿账本折算成零件消耗事件：过载秒数与打滑次数直接沿用摩擦片那条账，
+// partCounts 把本竿账本折算成零件消耗事件：过载秒数与打滑秒数直接沿用摩擦片那条账，
 // 不重复计数。每竿基准与泡水按钓组折扣折算（路亚族 <1），账本没记折扣按 1。
 func (w fightReelWear) partCounts() reelPartCounts {
 	var c reelPartCounts
@@ -188,6 +193,7 @@ func (w fightReelWear) partCounts() reelPartCounts {
 	}
 	c.OverloadSecs = w.BurnSecs
 	c.SlipTicks = w.SlipTicks
+	c.SlipSecs = w.SlipSecs
 	c.BreakHits = w.BreakHits
 	return c
 }
@@ -275,6 +281,10 @@ func (s *Server) fightReelCache(ctx context.Context, uid int64, rodGUID string, 
 		return out
 	}
 	oilQuality, oilDurability := s.reelOilStateFromRow(ctx, row)
+	reelBrand := ""
+	if def, derr := s.itemDefForRow(ctx, row); derr == nil && def != nil {
+		reelBrand = def.Brand
+	}
 	setting, _ := s.rodReelDragSetting(ctx, rodGUID)
 	return fightReelWear{
 		valid:    true,
@@ -287,6 +297,7 @@ func (s *Server) fightReelCache(ctx context.Context, uid int64, rodGUID string, 
 		lockedKg: perf.LockedDragKg,
 		ratedKg:  rated,
 		oilWear:  perf.OilWearFactor,
+		oilMatch: reelOilMatchFactor(row.ItemID, reelBrand, perf.OilItemID),
 		oilBurn:  reelOilBurnFactor(oilQuality, oilDurability),
 		pullKg:   s.fishFightPullKgfFor(f, s.fishFightProfileFor(f)),
 	}
@@ -358,9 +369,14 @@ func (s *Server) fightReelTickWear(w fightReelWear, tick float64) (ticks int, sl
 	if w.dragKg <= 0 || w.pullKg <= w.dragKg+1e-9 {
 		return 0, 0, 0, 0, 0
 	}
-	// 打滑次数已经按每条 14/8 计；单次磨损由摩擦档位决定，再让轮油在
-	// 0.8~1.2 之间微调。鱼力超出泄力的比例只决定“是否打滑”，不能再次放大。
-	return 1, reelSlipWearForSetting(w.setting) * reelSlipOilFactor(w.oilWear), 0, 0, 0
+	// 摩擦片按真实出线秒数磨，不按 14/8 报文条数磨。轮油品质/剩余油量和
+	// 轮油与轮子的适配倍率共同降低每秒磨损。鱼力超出泄力只决定是否打滑。
+	match := w.oilMatch
+	if match <= 0 {
+		match = 1
+	}
+	slipRate := reelSlipWearForSetting(w.setting) / reelSlipCalibrationSeconds
+	return 1, slipRate * tick * reelSlipOilFactor(w.oilWear) * match, 0, 0, 0
 }
 
 // recordFightReelLoad 结算一条 14/8 负载上报：只有正在搏鱼的那根竿算账。
@@ -370,6 +386,13 @@ func (s *Server) recordFightReelLoad(ctx *Ctx) {
 		return
 	}
 	uid := ctx.Sess.Userid
+	s.overloadProtectionMu.RLock()
+	defer s.overloadProtectionMu.RUnlock()
+	protected, err := readOverloadProtection(ctx.Sess.pushCtx(), s.DB.SQL, uid)
+	if err != nil {
+		ctx.Log.Warn("读取满红不爆设置失败，忽略本次负载", "err", err)
+		return
+	}
 	st := s.fishingStateForRequest(ctx)
 	st.mu.Lock()
 	fish, gear, castActive, hooked, resolved, cached := st.Pending, st.GearGuid, st.CastActive, st.Hooked, st.Resolved, st.reelWear
@@ -378,7 +401,15 @@ func (s *Server) recordFightReelLoad(ctx *Ctx) {
 		return
 	}
 	if !cached.valid || cached.fishGUID != fish.FishGUID || cached.rodGUID != gear {
+		sameLedger := cached.fishGUID == fish.FishGUID && cached.rodGUID == gear
+		lastLoadAt := cached.lastLoadAt
+		changedAt := cached.protectionChangedAt
 		cached = s.fightReelCache(s.dbCtx(), uid, gear, fish)
+		if sameLedger {
+			// 改摩擦档只让承力缓存失效，不应把上一条 14/8 的真实时间边界清掉。
+			cached.lastLoadAt = lastLoadAt
+		}
+		cached.protectionChangedAt = changedAt
 	}
 	if !cached.valid || cached.ratedKg <= 0 {
 		return
@@ -397,6 +428,11 @@ func (s *Server) recordFightReelLoad(ctx *Ctx) {
 	probeOn := s.tunableF("fight_load_probe", 1) != 0
 	tick = cached.loadTickSecondsLocked(now, tick, maxTick)
 	ticks, slipWear, burnWear, burnSecs, segSecs := s.fightReelTickWear(cached, tick)
+	if protected && cached.locked {
+		// Only suppress locked overload. Normal slip/use wear and previously
+		// incurred damage remain; keep sampling time so protected time is not billed.
+		burnWear, burnSecs, segSecs = 0, 0, 0
+	}
 
 	st.mu.Lock()
 	if st.Pending != fish || st.GearGuid != gear {
@@ -416,6 +452,9 @@ func (s *Server) recordFightReelLoad(ctx *Ctx) {
 		*cur = cached
 	}
 	cur.SlipTicks += ticks
+	if ticks > 0 {
+		cur.SlipSecs += tick
+	}
 	cur.SlipWear += slipWear
 	cur.BurnWear += burnWear
 	cur.BurnSecs += burnSecs
@@ -528,8 +567,9 @@ func (s *Server) applyFightReelWear(ctx context.Context, uid int64, w fightReelW
 func fightWearDetailFields(w fightReelWear, wear float64, parts map[string]float64) map[string]any {
 	round2 := func(v float64) float64 { return math.Round(v*100) / 100 }
 	detail := map[string]any{
-		"slip_ticks": w.SlipTicks,
-		"slip_wear":  round2(w.SlipWear * 10000), "burn_seconds": round2(w.BurnSecs),
+		"slip_ticks":   w.SlipTicks,
+		"slip_seconds": round2(w.SlipSecs),
+		"slip_wear":    round2(w.SlipWear * 10000), "burn_seconds": round2(w.BurnSecs),
 		"burn_wear": round2(w.BurnWear * 10000), "wear_bp": round2(wear * 10000),
 		"locked": w.locked, "drag_setting": w.setting, "pull_kg": round2(w.pullKg), "drag_kg": round2(w.dragKg),
 		"locked_drag_kg": round2(w.lockedKg), "washer_rated_kg": round2(w.ratedKg),
