@@ -789,17 +789,6 @@ func hCastPrepare(ctx *Ctx) ([]byte, bool) {
 	st.mu.Lock()
 	st.GearGuid = gear
 	st.ReelSetting = reelSpeed
-	if rigTypeLureFamily[st.RigType] {
-		st.LureMotionMask = 0
-		st.LureAction = ""
-		st.LureLayer = .5
-		st.LurePulseCount = 0
-		st.LurePulseAt = time.Time{}
-		st.LureToggleCount = 0
-		st.LureToggleAt = time.Time{}
-		st.LureStateAt = time.Time{}
-		st.LureLayerAt = time.Time{}
-	}
 	depthCM := st.DepthCM
 	rigType := st.RigType
 	st.mu.Unlock()
@@ -828,6 +817,22 @@ func hCastPrepare(ctx *Ctx) ([]byte, bool) {
 		rigType = srv.rigTypeOfItem(ctx.Sess.pushCtx(), row)
 		st.mu.Lock()
 		st.RigType = rigType
+		st.mu.Unlock()
+	}
+	// 拟饵族的状态只复位本竿自己那一行，而且必须等本竿钓组类型查清楚之后再做：
+	// 水层先落到本竿钓组的默认层，之后只有本竿自己的 14/7 帧才改写它。收不到
+	// 动画帧的竿（放在地上的）就一直是这个值，绝不借用别人那一帧。
+	if rigTypeLureFamily[rigType] {
+		st.mu.Lock()
+		st.LureMotionMask = 0
+		st.LureAction = ""
+		st.LureLayer = .5
+		st.LurePulseCount = 0
+		st.LurePulseAt = time.Time{}
+		st.LureToggleCount = 0
+		st.LureToggleAt = time.Time{}
+		st.LureStateAt = time.Time{}
+		st.LureLayerAt = time.Time{}
 		st.mu.Unlock()
 	}
 	// 水域装备限制：当前地图禁用的竿不可抛投准备（与 17/7 同一套拦截，

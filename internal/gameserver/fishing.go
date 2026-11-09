@@ -86,18 +86,57 @@ type FishState struct {
 	hookedChatFishGUID string // 仅进程内：同一尾鱼的确认与拒收重推共用播报标记。
 }
 
-// effectiveBaitDepthCMLocked 返回当前有效饵深。手杆从落水开始按固定
-// 下沉速度接近调漂深度，到底后保持；底层杆由 rigType 直接锁定底层。
-func (st *FishState) effectiveBaitDepthCMLocked(now time.Time) int64 {
+// baitDepthTargetCMLocked 是本竿自己的作钓水层目标（厘米）：拟饵族按本竿水层
+// 换算，手竿/沉底按本竿调深。每根竿只读自己的字段，绝不借用别的竿的动画位。
+func (st *FishState) baitDepthTargetCMLocked() int64 {
 	if st == nil {
 		return 0
 	}
 	if rigTypeLureFamily[st.RigType] {
 		return int64(math.Round(normalizeWaterLayer(st.LureLayer) * 500))
 	}
-	target := st.DepthCM
-	if target <= 0 {
-		target = 300
+	if st.DepthCM > 0 {
+		return st.DepthCM
+	}
+	return 300
+}
+
+// baitSettleSecondsLocked 本竿的饵从落点沉到自己作钓水层所需秒数。放在地上不管的
+// 竿收不到自己的 14/7 动画位，入水时刻就只能这样自算：一根竿一个数。
+func (st *FishState) baitSettleSecondsLocked() float64 {
+	return math.Max(0.5, float64(st.baitDepthTargetCMLocked())/25) // 约 0.25 m/s
+}
+
+// inWaterConfirmAtLocked 返回本竿"自己就能算出来"的入水确认时刻：抛竿被受理之后，
+// 饵沉到本竿自己的作钓水层要多久就等多久，ceilingSec 只是绝对上限。ceilingSec<=0
+// 或本竿还没有抛竿时刻时返回零值，表示不自算（回到只能等动画位的旧行为）。
+func (st *FishState) inWaterConfirmAtLocked(ceilingSec float64) time.Time {
+	if st == nil || ceilingSec <= 0 {
+		return time.Time{}
+	}
+	start := st.CastTs
+	if st.FallSeen && !st.FallTs.IsZero() {
+		start = st.FallTs
+	}
+	if start.IsZero() {
+		return time.Time{}
+	}
+	settle := st.baitSettleSecondsLocked()
+	if settle > ceilingSec {
+		settle = ceilingSec
+	}
+	return start.Add(time.Duration(settle * float64(time.Second)))
+}
+
+// effectiveBaitDepthCMLocked 返回当前有效饵深。手杆从落水开始按固定
+// 下沉速度接近调漂深度，到底后保持；底层杆由 rigType 直接锁定底层。
+func (st *FishState) effectiveBaitDepthCMLocked(now time.Time) int64 {
+	if st == nil {
+		return 0
+	}
+	target := st.baitDepthTargetCMLocked()
+	if rigTypeLureFamily[st.RigType] {
+		return target
 	}
 	start := st.FallTs
 	if start.IsZero() {
@@ -1891,36 +1930,44 @@ func (s *Server) onRodBiteTimerTicket(uid int64, st *FishState, ticket fishingTi
 		return
 	}
 	if !st.InWater {
-		// 14/7 的动画位族只覆盖已知钓组。某些手竿/特殊钓组不上报可识别
-		// 的入水位时，旧逻辑会把 NeedBite 永久挂起，玩家体感就是“完全没鱼”。
-		// 抛竿已被服务端接受后，超过兜底秒数就按已入水继续判鱼。
-		fallbackSec := s.tunableF("bite_inwater_fallback_seconds", 8)
-		if fallbackSec > 120 {
-			fallbackSec = 120
+		// 每一根竿各算各的那一竿。14/7 的入水动画位只覆盖当前正在操作的那根竿，
+		// 放在地上的竿一帧都收不到：旧逻辑要么把 NeedBite 永久挂起（玩家体感
+		// “完全没鱼”），要么三根竿共用一个兜底秒数。现在按本竿钓组沉到自己
+		// 作钓水层所需的时间自算入水，ceilingSec 退化成绝对上限。
+		ceilingSec := s.tunableF("bite_inwater_fallback_seconds", 8)
+		if ceilingSec > 120 {
+			ceilingSec = 120
 		}
-		if fallbackSec > 0 && !st.CastTs.IsZero() {
-			due := st.CastTs.Add(time.Duration(fallbackSec * float64(time.Second)))
-			if now.Before(due) {
-				st.NeedBite = true
-				wait := time.Until(due)
-				if wait < time.Second {
-					wait = time.Second
-				}
-				s.armBiteTimerLocked(uid, st, now.Add(wait))
-				st.mu.Unlock()
-				return
-			}
-			st.InWater = true
-			st.NeedBite = false
-			s.log.Info("入水动画位缺失，超时按入水继续判鱼",
-				"rod", shortGUID(st.GearGuid), "rig_type", st.RigType,
-				"fallback_sec", fallbackSec)
-		} else {
-			// 还没等到 14/7 的“在水中”动画位：先挂起，等它出现再派鱼。
+		due := st.inWaterConfirmAtLocked(ceilingSec)
+		if due.IsZero() {
+			// 本竿连抛竿时刻都没有：挂起等动画位（旧行为）。
 			st.NeedBite = true
 			st.mu.Unlock()
 			return
 		}
+		if now.Before(due) {
+			st.NeedBite = true
+			wait := time.Until(due)
+			if wait < time.Second {
+				wait = time.Second
+			}
+			s.armBiteTimerLocked(uid, st, now.Add(wait))
+			st.mu.Unlock()
+			return
+		}
+		st.InWater, st.NeedBite = true, false
+		targetCM, settleSec := st.baitDepthTargetCMLocked(), st.baitSettleSecondsLocked()
+		// 入水就照常扣一份饵，与在手上完全一致；事件键仍是本竿本次抛竿，
+		// 客户端随后补发动画位也不会重复扣。
+		st.mu.Unlock()
+		baitErr := s.consumeCastBait(sess, st)
+		st.mu.Lock()
+		if baitErr != nil {
+			s.log.Warn("自算入水扣减窝料失败", "rod", shortGUID(st.GearGuid), "err", baitErr)
+		}
+		s.log.Info("本竿未收到入水动画位，按本竿钓组下沉自算入水",
+			"rod", shortGUID(st.GearGuid), "rig_type", st.RigType,
+			"bait_target_cm", targetCM, "settle_sec", settleSec, "ceiling_sec", ceilingSec)
 	}
 	base := st.CastTs
 	if st.FallSeen && !st.FallTs.IsZero() {
