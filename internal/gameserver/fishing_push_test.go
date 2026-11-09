@@ -158,6 +158,50 @@ func TestBitePushSuccessPreservesNormalFlow(t *testing.T) {
 	}
 }
 
+func TestBiteTimerFallsBackWhenInWaterAnimationMissing(t *testing.T) {
+	s, _ := newRigTestServer(t)
+	sess, peer := newTunnelProbe(t, s)
+	s.mu.Lock()
+	s.sessions[sess.ID] = sess
+	s.mu.Unlock()
+	t.Cleanup(func() {
+		s.mu.Lock()
+		delete(s.sessions, sess.ID)
+		s.mu.Unlock()
+	})
+	st := s.stateFor(sess.Userid)
+	fish := &RolledFish{
+		FishGUID: "55555555555555555555555555555555",
+		Species:  "perch", Grade: 2, WeightG: 321, LengthM: .24,
+		BiteQuality: "solid", HookHoldP: 1,
+	}
+	st.mu.Lock()
+	st.GearGuid = "11111111111111111111111111111111"
+	st.CastActive, st.InWater, st.Armed = true, false, fish
+	st.CastTs = time.Now().Add(-10 * time.Second)
+	st.mu.Unlock()
+
+	received := receiveTestPush(peer, 14, 14)
+	s.onBiteTimer(sess.Userid)
+	select {
+	case env := <-received:
+		if env == nil || env.Main != 14 || env.Sub != 14 {
+			t.Fatalf("入水兜底未派鱼: %+v", env)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("入水动画位缺失后仍永久等待")
+	}
+	st.mu.Lock()
+	inWater, needBite, armed := st.InWater, st.NeedBite, st.Armed
+	st.cancelBiteTimerLocked()
+	st.cancelPendingTimerLocked()
+	st.mu.Unlock()
+	if !inWater || needBite || armed != nil {
+		t.Fatalf("入水兜底状态错误: in_water=%v need_bite=%v armed=%v",
+			inWater, needBite, armed != nil)
+	}
+}
+
 // 隧道写入尚未结束时，恢复查询和重复 timer 不能发送第二份鱼讯。
 func TestBitePushInFlightDoesNotRepush(t *testing.T) {
 	db := connectTestDB(t)

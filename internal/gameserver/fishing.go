@@ -1707,7 +1707,9 @@ func (s *Session) Push14_14(f *RolledFish, hookGUID, gearGuid string) bool {
 		"rod", shortGUID(gearGuid), "fish", shortGUID(f.FishGUID), "hook", shortGUID(hookGUID),
 		"鱼种", f.Species, "重量_g", f.WeightG, "体力池", stamina,
 		"初始体力", initialStamina, "拉力", force, "体型比例", profile.SizeRatio,
-		"冲刺倍率", profile.ForceScale, "耐力倍率", profile.StaminaScale)
+		"冲刺倍率", profile.ForceScale, "耐力倍率", profile.StaminaScale,
+		"bite_quality", f.BiteQuality, "hook_hold_p", f.HookHoldP,
+		"luck_protected", f.LuckProtected)
 	return s.Push(14, 14, proto.Args524(
 		proto.Guid(gearGuid),
 		s.Srv.buildFish27(f, hookGUID, gearGuid),
@@ -1871,6 +1873,7 @@ func (s *Server) onRodBiteTimerTicket(uid int64, st *FishState, ticket fishingTi
 		return
 	}
 	st.cancelBiteTimerLocked()
+	now := time.Now()
 	if sess == nil {
 		// 进程仍活着但玩家断开：保留 CastActive/Pending/BiteAt，下一次
 		// stateFor（重连首个业务请求）会按过期时刻立即恢复 timer。
@@ -1888,10 +1891,36 @@ func (s *Server) onRodBiteTimerTicket(uid int64, st *FishState, ticket fishingTi
 		return
 	}
 	if !st.InWater {
-		// 还没等到 14/7 的“在水中”动画位：先挂起，等它出现再派鱼。
-		st.NeedBite = true
-		st.mu.Unlock()
-		return
+		// 14/7 的动画位族只覆盖已知钓组。某些手竿/特殊钓组不上报可识别
+		// 的入水位时，旧逻辑会把 NeedBite 永久挂起，玩家体感就是“完全没鱼”。
+		// 抛竿已被服务端接受后，超过兜底秒数就按已入水继续判鱼。
+		fallbackSec := s.tunableF("bite_inwater_fallback_seconds", 8)
+		if fallbackSec > 120 {
+			fallbackSec = 120
+		}
+		if fallbackSec > 0 && !st.CastTs.IsZero() {
+			due := st.CastTs.Add(time.Duration(fallbackSec * float64(time.Second)))
+			if now.Before(due) {
+				st.NeedBite = true
+				wait := time.Until(due)
+				if wait < time.Second {
+					wait = time.Second
+				}
+				s.armBiteTimerLocked(uid, st, now.Add(wait))
+				st.mu.Unlock()
+				return
+			}
+			st.InWater = true
+			st.NeedBite = false
+			s.log.Info("入水动画位缺失，超时按入水继续判鱼",
+				"rod", shortGUID(st.GearGuid), "rig_type", st.RigType,
+				"fallback_sec", fallbackSec)
+		} else {
+			// 还没等到 14/7 的“在水中”动画位：先挂起，等它出现再派鱼。
+			st.NeedBite = true
+			st.mu.Unlock()
+			return
+		}
 	}
 	base := st.CastTs
 	if st.FallSeen && !st.FallTs.IsZero() {
@@ -1903,7 +1932,6 @@ func (s *Server) onRodBiteTimerTicket(uid int64, st *FishState, ticket fishingTi
 	if lure {
 		minWait = 500 * time.Millisecond
 	}
-	now := time.Now()
 	if !base.IsZero() && now.Sub(base) < floor {
 		// 落水保护：顺延
 		wait := time.Until(base.Add(floor))
@@ -1954,6 +1982,8 @@ func (s *Server) onRodBiteTimerTicket(uid int64, st *FishState, ticket fishingTi
 	}
 	if !s.canFishWithBait(s.dbCtx(), uid, st.GearGuid) {
 		// 空竿
+		s.log.Info("钓组没有有效鱼饵，停止派鱼",
+			"rod", shortGUID(st.GearGuid), "rig_type", st.RigType)
 		st.Pending = nil
 		st.Resolved = true
 		st.mu.Unlock()

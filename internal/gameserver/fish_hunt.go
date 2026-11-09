@@ -338,6 +338,13 @@ func (s *Server) hookBiteDelayFactorForRig(ctx context.Context, uid int64, rod s
 	return hookBiteDelayFactor(s.loadGearSpecForRig(ctx, ids, rod))
 }
 
+// hookNibbleVetoEnabled 控制是否允许服务端在客户端已经发出 14/11 后，
+// 再按钩容量把鱼改判成“只嘬了一口”。默认关闭：正常钓法以客户端咬钩为准，
+// 钩型只参与发鱼权重和真实搏鱼，不再做事后暗判。高级后台需要旧模型时可开。
+func (s *Server) hookNibbleVetoEnabled() bool {
+	return s != nil && s.tunableF("hook_nibble_veto", 0) == 1
+}
+
 // hookSolidHold 返回普通鱼的稳定入口概率与中钩后保持率。
 // 蓝冠不走这里，蓝冠由 luckProtected 直接保送。
 func hookSolidHold(weightG int64, spec gearPhysicsSpec) (solid, hold float64) {
@@ -360,7 +367,9 @@ func hookSolidHold(weightG int64, spec gearPhysicsSpec) (solid, hold float64) {
 		// 鱼才按超载程度降低保持率。
 		hold = 1
 	} else {
-		hold = groundbaitClamp(.98-.30*(r-1), .50, .98)
+		// 旧模型在 r>1 时下降过快，4kg 鱼配普通钩就可能只剩五成保钩率。
+		// 这里把超载惩罚放缓并把底线抬到 65%，保留装备差异但避免“刚中鱼就掉”。
+		hold = groundbaitClamp(.98-.15*(r-1), .65, .98)
 	}
 	return
 }
@@ -379,6 +388,14 @@ func (s *Server) applyHookBiteQuality(f *RolledFish, spec gearPhysicsSpec) {
 	solid, hold := hookSolidHold(f.WeightG, spec)
 	if p, ok := s.hookBiteProfileFor(spec.HookItemID); ok {
 		solid, hold = applyHookBiteProfile(f.WeightG, spec, p, solid, hold)
+	}
+	if !s.hookNibbleVetoEnabled() {
+		// 默认信任客户端的咬钩确认。过去这里仍会按钩长³估算入口容量，
+		// 2mm 钩对 1kg 鱼只有约 15% 稳定入口，玩家看到咬钩后点竿却被
+		// 服务端静默否决，体感就是“永远没口/刚上钩就脱”。
+		f.BiteQuality = "solid"
+		f.HookHoldP = 1
+		return
 	}
 	f.HookHoldP = hold
 	if rand.Float64() > solid {

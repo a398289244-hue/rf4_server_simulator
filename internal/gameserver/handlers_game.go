@@ -1230,9 +1230,10 @@ func hFishingPull(ctx *Ctx) ([]byte, bool) {
 	needsConfirmation := marineRigType(rigType) && pending != nil && castActive && !resolved && !pending.HookConfirmed
 	reconfirm := marineRigType(rigType) && pending != nil && pending.HookConfirmed && !wasHooked && castActive && !resolved
 	nibble := false
+	nibbleVeto := srv.hookNibbleVetoEnabled()
 	if needsConfirmation {
-		nibble = !pending.LuckProtected && pending.BiteQuality == "nibble"
-		if !wasHooked && !nibble {
+		nibble = nibbleVeto && !pending.LuckProtected && pending.BiteQuality == "nibble"
+		if nibbleVeto && !wasHooked && !nibble {
 			nibble = hookRetentionFails(pending)
 		}
 		if !nibble {
@@ -1306,8 +1307,9 @@ func hFishingHooked(ctx *Ctx) ([]byte, bool) {
 	}
 	// 钩型保持率只在首次中钩确认时抽样一次；已经 Hooked 的早期确认
 	// 或登录恢复不再重抽，但仍需为这尾鱼记录一次确认完成。
-	nibble := pending != nil && !pending.LuckProtected && pending.BiteQuality == "nibble"
-	if pending != nil && !wasHooked && !nibble && hookRetentionFails(pending) {
+	nibbleVeto := srv.hookNibbleVetoEnabled()
+	nibble := nibbleVeto && pending != nil && !pending.LuckProtected && pending.BiteQuality == "nibble"
+	if nibbleVeto && pending != nil && !wasHooked && !nibble && hookRetentionFails(pending) {
 		pending.BiteQuality = "nibble"
 		nibble = true
 	}
@@ -1323,7 +1325,13 @@ func hFishingHooked(ctx *Ctx) ([]byte, bool) {
 	if pending != nil {
 		fishGUID, species = pending.FishGUID, pending.Species
 	}
-	ctx.Log.Info("14/11 中鱼", "rod", shortGUID(gear), "fish", shortGUID(fishGUID), "species", species, "was_hooked", wasHooked)
+	biteQuality, hookHoldP := "", 0.0
+	if pending != nil {
+		biteQuality, hookHoldP = pending.BiteQuality, pending.HookHoldP
+	}
+	ctx.Log.Info("14/11 中鱼", "rod", shortGUID(gear), "fish", shortGUID(fishGUID),
+		"species", species, "was_hooked", wasHooked, "bite_quality", biteQuality,
+		"hook_hold_p", hookHoldP, "veto", nibbleVeto)
 	if nibble {
 		finishNibbleHook(ctx, st, pending, gear, castActive, resolved)
 		ctx.Log.Info("14/11 嘬饵未中钩，重新排鱼", "fish", shortGUID(fishGUID), "species", species)

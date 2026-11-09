@@ -10,6 +10,20 @@ import (
 	"rf4server/internal/proto"
 )
 
+func setHookNibbleVeto(t *testing.T, s *Server, enabled bool) {
+	t.Helper()
+	value := "0"
+	if enabled {
+		value = "1"
+	}
+	if err := s.DB.TunableSet(t.Context(), "hook_nibble_veto", value, "test"); err != nil {
+		t.Fatal(err)
+	}
+	s.tunMu.Lock()
+	s.tunAt = time.Time{}
+	s.tunMu.Unlock()
+}
+
 func TestFishHuntStageWeights(t *testing.T) {
 	tests := []struct {
 		stage          int
@@ -212,6 +226,7 @@ func TestUnhookedTrophyUnknownFrameDoesNotGrantEscapeCompensation(t *testing.T) 
 
 func TestNibbleDoesNotEnterHookedState(t *testing.T) {
 	s, _ := newRigTestServer(t)
+	setHookNibbleVeto(t, s, true)
 	sess, _ := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{Species: "crucian", Grade: 1, WeightG: 120,
@@ -230,6 +245,47 @@ func TestNibbleDoesNotEnterHookedState(t *testing.T) {
 	if !cleared {
 		t.Fatalf("嘬饵不应进入 Hooked 状态: pending=%v hooked=%v timer=%v",
 			st.Pending != nil, st.Hooked, st.biteTimer != nil)
+	}
+}
+
+func TestHookQualityDefaultsToClientTrust(t *testing.T) {
+	s, _ := newRigTestServer(t)
+	tiny := gearPhysicsSpec{
+		HookPresent: true, HookItemID: "tiny-test",
+		HookSize: 0, HookLengthMM: 1.8,
+	}
+	f := &RolledFish{Species: "carp", Grade: 2, WeightG: 12_000}
+	s.applyHookBiteQuality(f, tiny)
+	if f.BiteQuality != "solid" || f.HookHoldP != 1 {
+		t.Fatalf("默认模式必须信任客户端咬钩: quality=%s hold=%.2f",
+			f.BiteQuality, f.HookHoldP)
+	}
+}
+
+func TestNibbleVetoDisabledTrustsClientBite(t *testing.T) {
+	s, _ := newRigTestServer(t)
+	sess, _ := newTunnelProbe(t, s)
+	st := s.stateFor(sess.Userid)
+	fish := &RolledFish{
+		FishGUID: "1411feed1411feed1411feed1411feed",
+		Species:  "carp", Grade: 2, WeightG: 12_000,
+		BiteQuality: "nibble", HookHoldP: .15,
+	}
+	st.mu.Lock()
+	st.GearGuid = "ddd00000ddd00000ddd00000ddd00000"
+	st.CastActive, st.InWater, st.Resolved, st.Pending = true, true, false, fish
+	st.mu.Unlock()
+
+	if _, ok := hFishingHooked(miscCtx(sess, 14, 11, nil)); !ok {
+		t.Fatal("14/11 未处理")
+	}
+	st.mu.Lock()
+	kept := st.Pending == fish && st.Hooked
+	st.cancelBiteTimerLocked()
+	st.cancelPendingTimerLocked()
+	st.mu.Unlock()
+	if !kept {
+		t.Fatal("关闭事后嘬饵否决后，客户端确认的鱼必须进入中钩状态")
 	}
 }
 
@@ -269,6 +325,7 @@ func TestDuplicateHookedConfirmationIsIdempotent(t *testing.T) {
 
 func TestMarineNibbleDoesNotEnterHookedState(t *testing.T) {
 	s, _ := newRigTestServer(t)
+	setHookNibbleVeto(t, s, true)
 	sess, _ := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{Species: "atl_cod", Grade: 2, WeightG: 4200,
@@ -295,6 +352,7 @@ func TestMarineNibbleDoesNotEnterHookedState(t *testing.T) {
 // 鼓里继续搏鱼，拖到岸边收竿 14/4 落空，鱼凭空消失（2026-11-08 23:24/23:26 实证）。
 func TestNibbleVetoPushesFishLeave(t *testing.T) {
 	s, _ := newRigTestServer(t)
+	setHookNibbleVeto(t, s, true)
 	sess, gc := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{FishGUID: "1411feed1411feed1411feed1411feed", Species: "crucian", Grade: 1, WeightG: 120,
@@ -334,6 +392,7 @@ func TestNibbleVetoPushesFishLeave(t *testing.T) {
 
 func TestMarineNibbleVetoPushesFishLeave(t *testing.T) {
 	s, _ := newRigTestServer(t)
+	setHookNibbleVeto(t, s, true)
 	sess, gc := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{FishGUID: "149feed0149feed0149feed0149feed0", Species: "atl_cod", Grade: 2, WeightG: 4200,
@@ -363,6 +422,7 @@ func TestMarineNibbleVetoPushesFishLeave(t *testing.T) {
 // 不清刚重排的咬钩 timer，不把本竿标记为终局，也不产生任何推送。
 func TestNibbleVetoLeaveAckBenign(t *testing.T) {
 	s, _ := newRigTestServer(t)
+	setHookNibbleVeto(t, s, true)
 	sess, gc := newTunnelProbe(t, s)
 	st := s.stateFor(sess.Userid)
 	fish := &RolledFish{FishGUID: "abcd0000abcd0000abcd0000abcd0000", Species: "crucian", Grade: 1, WeightG: 120,
