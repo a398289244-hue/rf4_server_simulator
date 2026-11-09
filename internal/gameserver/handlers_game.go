@@ -1261,7 +1261,9 @@ func hFishingPull(ctx *Ctx) ([]byte, bool) {
 		return nil, true
 	}
 	if needsConfirmation {
-		if err := srv.consumeHookedBait(ctx.Sess, pending, gear); err != nil {
+		if srv.rodWasOnGround(ctx.Sess.Userid, st) {
+			ctx.Log.Info("竿不在手上，中钩先不扣饵，等上鱼结算或断线再扣", "fish", shortGUID(pending.FishGUID))
+		} else if err := srv.consumeHookedBait(ctx.Sess, pending, gear); err != nil {
 			ctx.Log.Warn("海钓抬竿后鱼饵扣减失败", "fish", pending.FishGUID, "err", err)
 		}
 		bound := false
@@ -1343,7 +1345,9 @@ func hFishingHooked(ctx *Ctx) ([]byte, bool) {
 		return nil, true
 	}
 	if pending != nil {
-		if err := srv.consumeHookedBait(ctx.Sess, pending, gear); err != nil {
+		if srv.rodWasOnGround(ctx.Sess.Userid, st) {
+			ctx.Log.Info("竿不在手上，中钩先不扣饵，等上鱼结算或断线再扣", "fish", shortGUID(pending.FishGUID))
+		} else if err := srv.consumeHookedBait(ctx.Sess, pending, gear); err != nil {
 			ctx.Log.Warn("中鱼后鱼饵扣减失败", "fish", pending.FishGUID, "err", err)
 		}
 	}
@@ -1379,7 +1383,10 @@ func finishNibbleHook(ctx *Ctx, st *FishState, pending *RolledFish, gear string,
 	srv := ctx.Sess.Srv
 	if pending != nil {
 		pending.HookConfirmed = false
-		if err := srv.consumeNibbleBait(ctx.Sess, pending, gear); err != nil {
+		// 水底的竿没人在管，嘬一口/脱钩都不该白吃一份料：只有上鱼或断线才动饵。
+		if srv.rodWasOnGround(ctx.Sess.Userid, st) {
+			ctx.Log.Info("竿不在手上，嘬饵不扣饵", "fish", shortGUID(pending.FishGUID))
+		} else if err := srv.consumeNibbleBait(ctx.Sess, pending, gear); err != nil {
 			ctx.Log.Warn("嘬饵扣饵失败", "fish", pending.FishGUID, "err", err)
 		}
 		// 14/11 的客户端语义是"鱼实体已进搏鱼态"，服务端单方面否决必须让客户端

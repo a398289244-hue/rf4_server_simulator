@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"rf4server/internal/proto"
@@ -494,6 +495,19 @@ func (s *Server) fishingEndSettle(ctx *Ctx) ([]byte, bool) {
 				}
 			}
 		})
+	}
+	// 水底/地上的那根竿中钩时没扣饵（脱钩不该白吃一份料），鱼真上鱼了才在这条鱼
+	// 的幂等键上扣。手持竿在中钩确认时已经扣过，同一个键再扣是 no-op。
+	if hasFish && pending.BaitsKnown {
+		change, cerr := s.consumeBaitEvent(cctx, uid, gearGUID, pending.FishGUID,
+			strings.Fields(pending.BaitGUIDs), false)
+		switch {
+		case cerr != nil:
+			ctx.Log.Warn("上鱼结算扣饵失败", "fish", shortGUID(pending.FishGUID), "err", cerr)
+		case len(change.Updated) > 0 || len(change.Removed) > 0:
+			sess := ctx.Sess
+			ctx.AfterResponse(func() { sess.pushBaitChange(change) })
+		}
 	}
 	// 收竿时补挂同种库存，供客户端校验下一次抛竿；搏鱼中不补挂。
 	// 补挂后的钓组和背包数量在 801 响应发送后同步，避免结算覆盖数量更新。

@@ -61,6 +61,12 @@ func rodOnGround(heldKey string, st *FishState) bool {
 	return key != "" && key != heldKey
 }
 
+// rodWasOnGround 给已经不持 st.mu 的调用方用：persist.rodGUID 在这行状态建好之后
+// 就不再变，所以锁外比字符串同样可靠。
+func (s *Server) rodWasOnGround(uid int64, st *FishState) bool {
+	return rodOnGround(s.heldRodKey(uid), st)
+}
+
 func (s *Server) fishingStatesFor(uid int64) []*FishState {
 	s.fishingState(uid)
 	s.fishMu.Lock()
