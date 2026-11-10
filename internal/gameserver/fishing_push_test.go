@@ -158,7 +158,9 @@ func TestBitePushSuccessPreservesNormalFlow(t *testing.T) {
 	}
 }
 
-func TestBiteTimerFallsBackWhenInWaterAnimationMissing(t *testing.T) {
+// 只有放在地上的竿会因 14/7 不带竿 GUID 而缺自己的入水位；它可按本竿状态兜底。
+// 手持竿缺 14/7 必须继续等待，防止岸抛被错误判入水。
+func TestGroundRodBiteTimerFallsBackWhenInWaterAnimationMissing(t *testing.T) {
 	s, _ := newRigTestServer(t)
 	sess, peer := newTunnelProbe(t, s)
 	s.mu.Lock()
@@ -177,7 +179,7 @@ func TestBiteTimerFallsBackWhenInWaterAnimationMissing(t *testing.T) {
 	}
 	st.mu.Lock()
 	st.GearGuid = "11111111111111111111111111111111"
-	st.CastActive, st.InWater, st.Armed = true, false, fish
+	st.CastActive, st.OnGround, st.InWater, st.Armed = true, true, false, fish
 	st.CastTs = time.Now().Add(-10 * time.Second)
 	st.mu.Unlock()
 

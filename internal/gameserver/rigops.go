@@ -2522,6 +2522,7 @@ func registerRigHandlers(d *Dispatch) {
 func hRodPut(ctx *Ctx) ([]byte, bool) {
 	st := ctx.Sess.Srv.fishingStateForRequest(ctx)
 	st.mu.Lock()
+	st.OnGround = true
 	gear, pending, hooked := st.GearGuid, st.Pending, st.Hooked
 	st.mu.Unlock()
 	fish := ""
@@ -2690,6 +2691,7 @@ func hRodTake(ctx *Ctx) ([]byte, bool) {
 	}
 	st = srv.selectFishingRod(ctx.Sess.Userid, rod)
 	st.mu.Lock()
+	st.OnGround = false
 	if rod != "" {
 		st.GearGuid = rod
 	}

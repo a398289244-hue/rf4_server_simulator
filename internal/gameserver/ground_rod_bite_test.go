@@ -39,6 +39,18 @@ func putRodOnGround(t *testing.T, s *Server, sess *Session, rod string) {
 	}
 }
 
+// confirmHeldRodInWater 模拟当前手持竿发出的 14/7 入水动画位。该报文不带竿 GUID，
+// 因而只能确认当前手上的一根；落地竿必须靠自己的兜底。
+func confirmHeldRodInWater(t *testing.T, s *Server, sess *Session) {
+	t.Helper()
+	step := dynamicTestCtx(s, rigRequestTree(t, wiregen.MustMakeObj("lobemkloehp",
+		map[int]*proto.Value{5: proto.U32(0x600)})))
+	step.Main, step.Sub, step.Sess = 14, 7, sess
+	if _, ok := hFishingStep(step); !ok {
+		t.Fatal("手持竿 14/7 入水位未受理")
+	}
+}
+
 // 玩家反馈："水底三把竿只有手上这根会刷鱼，放在地上的不会。"
 // 14/7 动画位请求不带竿 GUID（treeStrsDeep 只有水域名），因此永远落在手持竿上；
 // 地上的竿一帧都收不到，只能靠入水兜底继续判鱼。本用例全程不发 14/7。
@@ -68,6 +80,7 @@ func TestGroundRodsRollTheirOwnFish(t *testing.T) {
 		rods = append(rods, rod)
 		states = append(states, st)
 	}
+	confirmHeldRodInWater(t, s, sess)
 	deadline := time.Now().Add(3 * time.Second)
 	for {
 		all := true
@@ -114,10 +127,7 @@ func TestGroundRodWithoutFallbackNeverRollsFish(t *testing.T) {
 	baitTestMount(t, s, heldRod, "worm_01", 3, 350)
 	held := castOneRod(t, s, sess, heldRod)
 	// 手持竿有自己的一帧动画位，地上的竿没有。
-	step := dynamicTestCtx(s, rigRequestTree(t, wiregen.MustMakeObj("lobemkloehp",
-		map[int]*proto.Value{5: proto.U32(0x600)})))
-	step.Main, step.Sub, step.Sess = 14, 7, sess
-	hFishingStep(step)
+	confirmHeldRodInWater(t, s, sess)
 
 	// 两条计时器都在后台 goroutine 跑；CI 机器繁忙时固定睡 400ms 可能还没轮到，
 	// 按状态轮询而不是赌调度速度。
@@ -129,5 +139,42 @@ func TestGroundRodWithoutFallbackNeverRollsFish(t *testing.T) {
 	}
 	if !rodWaitUntil(func() bool { return rodStillWaiting(ground) }, 5*time.Second) {
 		t.Fatalf("兜底关闭时地上竿应挂着等入水：pending=%+v", rodPendingFish(ground))
+	}
+}
+
+// 手持竿没有 14/7 不能套用落地竿的入水兜底：这通常就是岸抛，既不能派鱼，
+// 也不能把挂在钓组上的 PVA/窝料扣掉。
+func TestHeldRodWithoutWaterStepDoesNotUseFallback(t *testing.T) {
+	s, db := newRigTestServer(t)
+	t.Cleanup(func() { stopFishingRecoveryTimers(s) })
+	sess := registerBiteTestSession(t, s, 707, nil)
+	setWeatherTestTunable(t, s, "bite_delay_fixed", "0.01")
+	setWeatherTestTunable(t, s, "bite_inwater_fallback_seconds", "0.02")
+
+	rod := baitTestRod(t, s)
+	mountHookForBaitTest(t, s, rod, 0)
+	baitTestMount(t, s, rod, "worm_01", 3, 350)
+	pva, err := s.CreateItem(t.Context(), sess.Userid, "pva_stick_s", "backpack", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := s.rigSetComponent(t.Context(), sess.Userid, rod, 0, pva.GUID, 0,
+		rigSetOpts{ParentType: familyRod, EnforceCategory: true, SplitStack: true})
+	if res.Rejected || res.MountedGUID == "" {
+		t.Fatalf("挂载 PVA 失败: %+v", res)
+	}
+
+	st := castOneRod(t, s, sess, rod)
+	if !rodWaitUntil(func() bool {
+		st.mu.Lock()
+		defer st.mu.Unlock()
+		return st.NeedBite && !st.InWater && st.Pending == nil
+	}, 5*time.Second) {
+		st.mu.Lock()
+		defer st.mu.Unlock()
+		t.Fatalf("手持竿未等 14/7：in_water=%v need_bite=%v pending=%+v", st.InWater, st.NeedBite, st.Pending)
+	}
+	if row, err := db.GetItemByGUID(t.Context(), res.MountedGUID); err != nil || row == nil {
+		t.Fatalf("手持岸抛未收到 14/7 时不得消耗 PVA: row=%+v err=%v", row, err)
 	}
 }

@@ -31,6 +31,9 @@ type FishState struct {
 	// 落库后清零；口径见 specs/changes/reel-friction-life-model/spec.md。
 	reelWear   fightReelWear
 	CastActive bool
+	// OnGround 由 17/8 与 17/7 明确维护。17/8 放竿后客户端可能尚未选中下一根，
+	// 此时不能只靠 heldFishingRods 推断，否则这根已经落地的竿会被误当手持。
+	OnGround   bool
 	CastM      float64 // 本杆 14/2 上报的实际落点距离（米），不是钓具理论最大值
 	InWater    bool
 	NeedBite   bool
@@ -1908,6 +1911,11 @@ func (s *Server) onRodBiteTimerTicket(uid int64, st *FishState, ticket fishingTi
 	if sess != nil {
 		sess.updateHappyHour(time.Now(), false)
 	}
+	// 14/7 不携带竿 GUID，落地竿收不到自己的入水动画位，才允许它们按本竿
+	// 的下沉时间兜底。手持竿必须等 14/7（或其他明确落点确认），否则岸抛
+	// 会被超时错误地当成入水并扣窝料/PVA、继续派鱼。
+	// 先取手持键再锁本竿，避免与切竿路径形成 fishMu -> st.mu 的锁序反转。
+	heldKey := s.heldRodKey(uid)
 	st.mu.Lock()
 	if ticket.generation != st.castGeneration || ticket.sequence != st.biteTicket {
 		st.mu.Unlock()
@@ -1932,6 +1940,11 @@ func (s *Server) onRodBiteTimerTicket(uid int64, st *FishState, ticket fishingTi
 		return
 	}
 	if !st.InWater {
+		if !rodOnGround(heldKey, st) {
+			st.NeedBite = true
+			st.mu.Unlock()
+			return
+		}
 		// 每一根竿各算各的那一竿。14/7 的入水动画位只覆盖当前正在操作的那根竿，
 		// 放在地上的竿一帧都收不到：旧逻辑要么把 NeedBite 永久挂起（玩家体感
 		// “完全没鱼”），要么三根竿共用一个兜底秒数。现在按本竿钓组沉到自己

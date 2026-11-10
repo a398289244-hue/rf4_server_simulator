@@ -53,12 +53,12 @@ func (s *Server) heldRodKey(uid int64) string {
 	return s.heldFishingRods[uid]
 }
 
-// rodOnGround 在调用方已持有 st.mu 时判断这根竿是否不在手上。放在地上的竿没有人
-// 在管泄力和收线张力，所以它的鱼不能按搏鱼张力帧判成跑鱼，否则玩家根本来不及取
-// 竿；只有一根竿且从没换过手时无从区分，按手上处理。
+// rodOnGround 在调用方已持有 st.mu 时判断这根竿是否不在手上。17/8 的明确落地
+// 状态优先；重连等旧状态没有该标记时再由当前手持键兜底推断。放在地上的竿没有人
+// 在管泄力和收线张力，所以它的鱼不能按搏鱼张力帧判成跑鱼，否则玩家根本来不及取竿。
 func rodOnGround(heldKey string, st *FishState) bool {
 	key := st.persist.rodGUID
-	return key != "" && key != heldKey
+	return st.OnGround || (key != "" && key != heldKey)
 }
 
 // rodWasOnGround 给已经不持 st.mu 的调用方用：persist.rodGUID 在这行状态建好之后

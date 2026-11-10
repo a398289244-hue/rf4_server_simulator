@@ -78,6 +78,7 @@ func TestGroundRodComputesItsOwnWaterLayerAndFish(t *testing.T) {
 	}
 	setRodDepth(t, s, sess, heldRod, 40)
 	held := castOneRod(t, s, sess, heldRod)
+	confirmHeldRodInWater(t, s, sess)
 
 	if got := rodDepthCM(ground); got != 0 {
 		t.Fatalf("地上竿的钓深被手上那把设定改掉了：depth_cm=%d", got)
@@ -172,6 +173,7 @@ func TestGroundRodKeepsRollingWhileHeldRodWaitsKeepnet(t *testing.T) {
 	}
 	setRodDepth(t, s, sess, heldRod, 40)
 	held := castOneRod(t, s, sess, heldRod)
+	confirmHeldRodInWater(t, s, sess)
 	if !rodWaitUntil(func() bool { f := rodPendingFish(held); return f != nil && f.GearGUID == heldRod }, 4*time.Second) {
 		t.Fatal("手上那根没按自己的钓深派鱼，本用例前提失效")
 	}
