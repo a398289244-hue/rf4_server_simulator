@@ -47,12 +47,12 @@ func TestFishEcologySeedsSpeciesAndMatchesWaterLayers(t *testing.T) {
 	srv.tunCache = map[string]float64{"fish_ecology_enabled": 1}
 	srv.tunAt = time.Now()
 
-	// 本用例验证的是水层偏好，不能把真实时刻带来的昼夜、季节和天气偏好
-	// 混进来；否则同一份生态表会随 CI 的运行时刻偶发翻转比较结果。
-	surface := fishRollContext{rigType: 1, depthCM: 50}
-	bottom := fishRollContext{rigType: 12, depthCM: 500}
+	// 水层匹配与季节/时段无关，直接测水层因子：合成鱼口权重还乘了季节与水温，
+	// 冬季鲶鱼季节权重低，会把「底层更偏鲶鱼」这条断言带偏。
 	pike := srv.fishEcology(ctx, "n.pike")
 	catfish := srv.fishEcology(ctx, "w_catfish")
+	surface := fishRollContext{rigType: 1, depthCM: 50}
+	bottom := fishRollContext{rigType: 12, depthCM: 500}
 	pikeSurface := srv.fishLayerWeightProfile(pike, surface)
 	pikeBottom := srv.fishLayerWeightProfile(pike, bottom)
 	catSurface := srv.fishLayerWeightProfile(catfish, surface)
@@ -62,6 +62,20 @@ func TestFishEcologySeedsSpeciesAndMatchesWaterLayers(t *testing.T) {
 	}
 	if catBottom <= pikeBottom {
 		t.Fatalf("底层应更偏向鲶鱼: catfish=%f pike=%f", catBottom, pikeBottom)
+	}
+
+	// 合成鱼口权重：暖季底层偏向鲶鱼，冬季鲶鱼被季节权重压低（season_mask 不含冬）。
+	// 游戏历 24 倍速，这里固定游戏时刻，避免真实日期漂移。
+	summer := time.Unix(worldDayEpochUnix+180*24*realSecPerGameHour+12*realSecPerGameHour, 0)
+	winter := time.Unix(worldDayEpochUnix+350*24*realSecPerGameHour+12*realSecPerGameHour, 0)
+	catSummer := srv.fishBiteEnvironmentWeight(ctx, "w_catfish", fishRollContext{rigType: 12, depthCM: 500, now: summer})
+	catWinter := srv.fishBiteEnvironmentWeight(ctx, "w_catfish", fishRollContext{rigType: 12, depthCM: 500, now: winter})
+	pikeSummer := srv.fishBiteEnvironmentWeight(ctx, "n.pike", fishRollContext{rigType: 12, depthCM: 500, now: summer})
+	if catSummer <= pikeSummer {
+		t.Fatalf("暖季底层应偏向鲶鱼: catfish=%f pike=%f", catSummer, pikeSummer)
+	}
+	if catWinter >= catSummer {
+		t.Fatalf("冬季鲶鱼应被季节权重压低: 冬=%f 夏=%f", catWinter, catSummer)
 	}
 }
 
