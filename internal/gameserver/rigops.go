@@ -2040,6 +2040,17 @@ func (s *Server) rigSetType(ctx context.Context, uid int64, rodGUID string, rigT
 	if err != nil || row == nil || row.UID != uid {
 		return false
 	}
+	// 17/1 来自客户端，不能只信任物品归属。已知竿型必须只能选用
+	// 自己的钓组集合，否则会把海钓、路亚等无效类型写进普通鱼竿实例。
+	// 未知竿型沿用矩阵的一贯口径：不在此处拦截，交给后续兼容性矫正。
+	def, derr := s.DB.GetItemDef(ctx, row.NumericID)
+	if derr != nil || def == nil || def.Category != gearCatRod {
+		return false
+	}
+	if allowed, known := rodRigAllowed[rodDefRodType(def)]; known && len(allowed) > 0 && !allowedContains(allowed, rigType) {
+		s.log.Warn("竿钓组类型被拒绝：与竿型不兼容", "rod", shortGUID(rodGUID), "rig_type", rigType)
+		return false
+	}
 	// 玩家显式选择优先。已装组件与新类型不完全匹配时也不拒绝，
 	// 后续矫正不能用组件推断覆盖该选择。
 	// 钓组与挂饵方式联动：mutate 里 buildRig153Like 已按新类型重算 f9，

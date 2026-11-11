@@ -47,12 +47,16 @@ func TestFishEcologySeedsSpeciesAndMatchesWaterLayers(t *testing.T) {
 	srv.tunCache = map[string]float64{"fish_ecology_enabled": 1}
 	srv.tunAt = time.Now()
 
-	surface := fishRollContext{rigType: 1, depthCM: 50, now: time.Now()}
-	bottom := fishRollContext{rigType: 12, depthCM: 500, now: time.Now()}
-	pikeSurface := srv.fishBiteEnvironmentWeight(ctx, "n.pike", surface)
-	pikeBottom := srv.fishBiteEnvironmentWeight(ctx, "n.pike", bottom)
-	catSurface := srv.fishBiteEnvironmentWeight(ctx, "w_catfish", surface)
-	catBottom := srv.fishBiteEnvironmentWeight(ctx, "w_catfish", bottom)
+	// 本用例验证的是水层偏好，不能把真实时刻带来的昼夜、季节和天气偏好
+	// 混进来；否则同一份生态表会随 CI 的运行时刻偶发翻转比较结果。
+	surface := fishRollContext{rigType: 1, depthCM: 50}
+	bottom := fishRollContext{rigType: 12, depthCM: 500}
+	pike := srv.fishEcology(ctx, "n.pike")
+	catfish := srv.fishEcology(ctx, "w_catfish")
+	pikeSurface := srv.fishLayerWeightProfile(pike, surface)
+	pikeBottom := srv.fishLayerWeightProfile(pike, bottom)
+	catSurface := srv.fishLayerWeightProfile(catfish, surface)
+	catBottom := srv.fishLayerWeightProfile(catfish, bottom)
 	if pikeSurface <= catSurface {
 		t.Fatalf("上层水层应更偏向掠食鱼: pike=%f catfish=%f", pikeSurface, catSurface)
 	}

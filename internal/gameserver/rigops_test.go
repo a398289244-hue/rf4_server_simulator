@@ -337,6 +337,38 @@ func TestRigSetTypeStaleCorrection(t *testing.T) {
 	}
 }
 
+// TestRigSetTypeRejectsUnsupportedRodType 确保 17/1 不能把不属于本竿型的
+// 钓组写进实例或 rig 派生表。
+func TestRigSetTypeRejectsUnsupportedRodType(t *testing.T) {
+	srv, db := newRigTestServer(t)
+	ctx := context.Background()
+	const uid = int64(1000001)
+
+	rod, err := srv.CreateItem(ctx, uid, "feeder_10125_FD360", "backpack", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !srv.rigSetType(ctx, uid, rod.GUID, 12) {
+		t.Fatal("设置 Feeder 合法钓组失败")
+	}
+	if srv.rigSetType(ctx, uid, rod.GUID, 50) { // MarinePilker，不属于 Feeder 竿型 10
+		t.Fatal("不兼容的海钓钓组不应被 Feeder 竿接受")
+	}
+
+	rigType, found, err := db.GetRigType(ctx, rod.GUID)
+	if err != nil || !found || rigType != 12 {
+		t.Fatalf("拒绝后 rig 行应保持 12，实得 type=%d found=%v err=%v", rigType, found, err)
+	}
+	row, err := db.GetItemByGUID(ctx, rod.GUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f5 := rigStoredF5(t, row)
+	if got := int64(u64Of(f5.Field(1).Num)); got != 12 {
+		t.Fatalf("拒绝后实例 f5.f1 应保持 12，实得 %d", got)
+	}
+}
+
 // TestRigTypeSwitchReturnsIncompatibleComponents 确保切换钓组时，不能把旧钓组
 // 专用的食笼和前导带进新钓组；两种钓组都支持的铃铛和鱼钩要继续保留。
 func TestRigTypeSwitchReturnsIncompatibleComponents(t *testing.T) {
