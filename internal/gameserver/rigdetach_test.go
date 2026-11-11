@@ -268,8 +268,9 @@ func TestRig157Completeness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("造 FD390 失败: %v", err)
 	}
-	// 同 TestDetachReturnsToBackpack：钉路亚族保持计件拆分子实例路径。
-	if !srv.rigSetType(ctx, uid, rod.GUID, 6) {
+	// 先固定为与该完整组装一致的 BottomSimple，避免切换类型时按新规则
+	// 退回底钓组不支持的组件。
+	if !srv.rigSetType(ctx, uid, rod.GUID, 12) {
 		t.Fatal("rigSetType 失败")
 	}
 	reel, err := srv.CreateItem(ctx, uid, "spin_5184", "backpack", 1) // 渔轮
