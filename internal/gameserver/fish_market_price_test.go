@@ -1,11 +1,44 @@
 package gameserver
 
 import (
+	"context"
 	"math"
 	"testing"
+	"time"
 
+	"rf4server/internal/config"
+	"rf4server/internal/logging"
 	"rf4server/internal/store"
 )
+
+func TestMarketPriceDefinitionOverridesFallbackByWeight(t *testing.T) {
+	db := openItemTestDB(t)
+	srv := NewServer(config.Game{Tunnel: config.Tunnel{PSK: "market-price-def"}}, logging.Discard(), nil)
+	srv.SetDB(db)
+	ctx := context.Background()
+	if err := db.UpsertFishMarketPriceDef(ctx, store.FishMarketPriceDef{
+		MapKey: "level_001_lake", FishKey: "price_test", Grade: 2, WeightMinG: 0,
+		SilverPerKg: 10, Source: "official_capture", SourceRef: "capture-low",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertFishMarketPriceDef(ctx, store.FishMarketPriceDef{
+		MapKey: "level_001_lake", FishKey: "price_test", Grade: 2, WeightMinG: 1000,
+		SilverPerKg: 20, Source: "official_capture", SourceRef: "capture-high",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	now := float64(time.Now().Unix())
+	e := &store.KeepnetEntry{Species: "price_test", Cat: 2, WeightG: 1500, TS: now}
+	want := int64(math.Round(20 * dailyMarketFactor(e.Species, now) * 1.5 * 100))
+	if got := srv.marketPriceCentsFromTable(ctx, e, now, "level_001_lake"); got != want {
+		t.Fatalf("重量段表价=%d want=%d", got, want)
+	}
+	missing := &store.KeepnetEntry{Species: "price_missing", Cat: 2, WeightG: 100, TS: now}
+	if got, want := srv.marketPriceCentsFromTable(ctx, missing, now, "level_001_lake"), marketPriceCentsForMap(missing, now, "level_001_lake"); got != want {
+		t.Fatalf("缺表鱼种应回退: got=%d want=%d", got, want)
+	}
+}
 
 // 水域倍率必须真正生效：不同 market_pct 的地图返回不同覆盖价。
 func TestMarketOverlayAppliesMapMultiplier(t *testing.T) {

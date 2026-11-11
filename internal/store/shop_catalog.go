@@ -133,8 +133,14 @@ type shopShelfResolution struct {
 
 func (d *DB) loadRecordedShopShelves(ctx context.Context) (map[string][]*ShopPrice, error) {
 	rows, err := d.SQL.QueryContext(ctx, `
-		SELECT store_id, item_id, silver, gold, stock
-		FROM shop_item ORDER BY store_id, item_id`)
+		SELECT store_id, item_id, silver, gold, stock FROM shop_price_def
+		UNION ALL
+		SELECT s.store_id, s.item_id, s.silver, s.gold, s.stock
+		  FROM shop_item s
+		 WHERE NOT EXISTS (
+			SELECT 1 FROM shop_price_def p
+			 WHERE p.store_id=s.store_id AND p.item_id=s.item_id)
+		ORDER BY store_id, item_id`)
 	if err != nil {
 		return nil, err
 	}

@@ -286,6 +286,43 @@ func marketPriceCentsForMap(e *store.KeepnetEntry, now float64, mapKey string) i
 	return int64(math.Max(1, math.Round(marketRatePerG(e.Species, grade)*factor*float64(w)*100*fresh)))
 }
 
+// marketPriceCentsFromTable 优先使用可追溯的鱼市价格表。表中允许按重量段覆写
+// 每公斤价格；没有直接地图数据时沿用现有地图倍率折算和纯函数回退。
+func (s *Server) marketPriceCentsFromTable(ctx context.Context, e *store.KeepnetEntry, now float64, mapKey string) int64 {
+	if e == nil {
+		return 0
+	}
+	if s == nil || s.DB == nil {
+		return marketPriceCentsForMap(e, now, mapKey)
+	}
+	w := e.WeightG
+	if w < 1 {
+		w = 1
+	}
+	grade := e.Cat
+	if grade < 1 {
+		grade = 1
+	}
+	mapKey = normalizeMarketMapKey(mapKey)
+	perKg, found, err := s.DB.FishMarketPricePerKg(ctx, mapKey, e.Species, grade, w)
+	if err != nil {
+		s.log.Warn("读取鱼市价格定义失败，使用回退价", "fish", e.Species, "err", err)
+	}
+	if !found && mapKey != "level_009_ahtuba" {
+		if base, ok, berr := s.DB.FishMarketPricePerKg(ctx, "level_009_ahtuba", e.Species, grade, w); berr != nil {
+			s.log.Warn("读取鱼市基准价格失败，使用回退价", "fish", e.Species, "err", berr)
+		} else if ok {
+			if pct := marketMapPct(mapKey); pct > 0 {
+				perKg, found = base*pct, true
+			}
+		}
+	}
+	if !found {
+		return marketPriceCentsForMap(e, now, mapKey)
+	}
+	return int64(math.Max(1, math.Round(perKg*dailyMarketFactor(e.Species, now)*(float64(w)/1000.0)*100*freshnessFactor(e.TS, now))))
+}
+
 // marketPriceCents 在未指定地图时计算报价，地图路径应使用 marketPriceCentsForMap。
 func marketPriceCents(e *store.KeepnetEntry, now float64) int64 {
 	return marketPriceCentsForMap(e, now, "")
@@ -343,7 +380,7 @@ func hMarketRate(ctx *Ctx) ([]byte, bool) {
 			rotten++
 		}
 		// 鱼市按卖鱼时所在水域计价：同一批鱼在不同地图卖出，价格随该图倍率变化。
-		price := marketPriceCentsForMap(e, now, sellMapKey)
+		price := srv.marketPriceCentsFromTable(cctx, e, now, sellMapKey)
 		out.Items = append(out.Items, wiregen.MustMakeObj("jpmlmnfkbfn", map[int]*proto.Value{
 			0: proto.Guid(g),
 			1: proto.U64(uint64(price)),
@@ -377,6 +414,17 @@ func hMarketSell(ctx *Ctx) ([]byte, bool) {
 	// 地图解析使用连接池，必须在事务前完成；事务内只重读护网行并核价。
 	// 鱼市按卖鱼时所在水域计价，与鱼的钓获地图无关。
 	sellMapKey := srv.currentLevel(uid)
+	// 价格定义表读取同样必须在事务外：当前 store.DB 只有一个 SQLite 连接，
+	// 在 20/2 的事务中再走仓储查询会等待自身锁。护网鱼在事务内仍会重读并
+	// 删除；这里仅提前取得与该条目绑定的报价。
+	priceByGUID := make(map[string]int64, len(guids))
+	for _, g := range guids {
+		e, perr := srv.DB.KeepnetGet(cctx, uid, g)
+		if perr != nil || e == nil {
+			continue
+		}
+		priceByGUID[g] = srv.marketPriceCentsFromTable(cctx, e, now, sellMapKey)
+	}
 
 	type soldPair struct {
 		guid  string
@@ -419,8 +467,12 @@ func hMarketSell(ctx *Ctx) ([]byte, bool) {
 			ctx.Log.Warn("20/2 读取挂单锁失败", "guid", g, "err", err)
 			return []byte{0x0F}, true
 		}
-		mapKey := sellMapKey
-		price := marketPriceCentsForMap(e, now, mapKey)
+		price, ok := priceByGUID[g]
+		if !ok {
+			// 护网条目在预取与事务间才出现时不能再查 DB；保持纯函数兜底，
+			// 事务内不产生单连接自等待。
+			price = marketPriceCentsForMap(e, now, sellMapKey)
+		}
 		sold = append(sold, soldPair{guid: g, price: price})
 		total += price
 		removed = append(removed, g)
