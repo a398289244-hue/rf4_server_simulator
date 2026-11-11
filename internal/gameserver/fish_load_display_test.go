@@ -64,6 +64,9 @@ func TestFishFightProfilesUseSpeciesAndWeight(t *testing.T) {
 		t.Fatalf("鲶鱼耐力应高于梭鲈: catfish=%f pike=%f",
 			catfish.StaminaScale, pikeLarge.StaminaScale)
 	}
+	if math.Abs(pikeLarge.BurstDurationScale-0.4) > 1e-9 {
+		t.Fatalf("冲刺阶段应按 2.5 倍疲劳缩短为 40%%，实得 %f", pikeLarge.BurstDurationScale)
+	}
 
 	curves := srv.buildFightCurvesForFish(
 		&RolledFish{Species: "n.pike", WeightG: 8000},
@@ -71,6 +74,7 @@ func TestFishFightProfilesUseSpeciesAndWeight(t *testing.T) {
 		pikeLarge,
 	)
 	minTension, maxTension, restTension, burstTension := math.Inf(1), 0.0, 0.0, 0.0
+	burstDuration, restDuration := 0.0, 0.0
 	for _, row := range curves.Items {
 		stageField := row.Field(0)
 		stage := stageField.U32()
@@ -79,9 +83,11 @@ func TestFishFightProfilesUseSpeciesAndWeight(t *testing.T) {
 		maxTension = math.Max(maxTension, v)
 		if fightIsRestPhase(stage) {
 			restTension = math.Max(restTension, v)
+			restDuration = math.Max(restDuration, protoF32Field(row, 2))
 		}
 		if stage == 302 || stage == 101 {
 			burstTension = math.Max(burstTension, v)
+			burstDuration = math.Max(burstDuration, protoF32Field(row, 2))
 		}
 	}
 	if burstTension <= restTension*1.8 {
@@ -89,6 +95,9 @@ func TestFishFightProfilesUseSpeciesAndWeight(t *testing.T) {
 	}
 	if maxTension <= minTension*2.2 {
 		t.Fatalf("完整搏鱼池张力波动不足: %.2f..%.2f", minTension, maxTension)
+	}
+	if burstDuration >= restDuration {
+		t.Fatalf("冲刺阶段应比恢复阶段更短：burst=%f rest=%f", burstDuration, restDuration)
 	}
 }
 

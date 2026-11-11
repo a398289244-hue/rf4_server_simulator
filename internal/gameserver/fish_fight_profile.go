@@ -7,35 +7,37 @@ import (
 
 // fishFightProfile 是一次搏鱼中鱼种与体重共同决定的动态参数。
 // forceScale 作用于冲刺峰值；duration/rest 作用于 27.f21 的阶段时长；
-// staminaScale 作用于 27.f5 的体力池。
+// burstDurationScale 会缩短高张力阶段，让冲刺更快转入恢复；staminaScale 作用于 27.f5 的体力池。
 type fishFightProfile struct {
-	ForceScale    float64
-	DurationScale float64
-	RestScale     float64
-	StaminaScale  float64
-	SizeRatio     float64
+	ForceScale         float64
+	DurationScale      float64
+	RestScale          float64
+	BurstDurationScale float64
+	StaminaScale       float64
+	SizeRatio          float64
 }
 
 type fishFightArchetype struct {
-	Burst     float64
-	Duration  float64
-	Rest      float64
-	Stamina   float64
-	RestPower float64
-	CurvePool string
+	Burst        float64
+	Duration     float64
+	Rest         float64
+	BurstFatigue float64
+	Stamina      float64
+	RestPower    float64
+	CurvePool    string
 }
 
 var fishFightArchetypes = map[string]fishFightArchetype{
-	"default":  {Burst: 1.10, Duration: 0.95, Rest: 0.85, Stamina: 1.00, RestPower: 0.55, CurvePool: "crucian"},
-	"ambush":   {Burst: 1.38, Duration: 0.72, Rest: 0.68, Stamina: 0.95, RestPower: 0.48, CurvePool: "perch"},
-	"salmonid": {Burst: 1.30, Duration: 1.18, Rest: 0.92, Stamina: 1.28, RestPower: 0.52, CurvePool: "e.chub"},
-	"cyprinid": {Burst: 1.06, Duration: 1.22, Rest: 1.10, Stamina: 1.38, RestPower: 0.58, CurvePool: "c.carp"},
-	"catfish":  {Burst: 1.48, Duration: 1.20, Rest: 1.18, Stamina: 1.65, RestPower: 0.60, CurvePool: "e.chub"},
-	"sturgeon": {Burst: 1.34, Duration: 1.42, Rest: 1.22, Stamina: 1.75, RestPower: 0.62, CurvePool: "e.chub"},
-	"small":    {Burst: 0.96, Duration: 0.62, Rest: 0.58, Stamina: 0.72, RestPower: 0.45, CurvePool: "c.roach"},
-	"marine":   {Burst: 1.22, Duration: 1.02, Rest: 0.90, Stamina: 1.18, RestPower: 0.52, CurvePool: "perch"},
-	"eel":      {Burst: 1.16, Duration: 0.78, Rest: 0.68, Stamina: 0.92, RestPower: 0.46, CurvePool: "a.sleeper"},
-	"apex":     {Burst: 1.58, Duration: 1.05, Rest: 1.05, Stamina: 1.55, RestPower: 0.56, CurvePool: "e.chub"},
+	"default":  {Burst: 1.10, Duration: 0.95, Rest: 0.85, BurstFatigue: 2.5, Stamina: 1.00, RestPower: 0.55, CurvePool: "crucian"},
+	"ambush":   {Burst: 1.24, Duration: 0.72, Rest: 0.68, BurstFatigue: 2.5, Stamina: 0.95, RestPower: 0.48, CurvePool: "perch"},
+	"salmonid": {Burst: 1.17, Duration: 1.18, Rest: 0.92, BurstFatigue: 2.5, Stamina: 1.28, RestPower: 0.52, CurvePool: "e.chub"},
+	"cyprinid": {Burst: 1.06, Duration: 1.22, Rest: 1.10, BurstFatigue: 2.5, Stamina: 1.38, RestPower: 0.58, CurvePool: "c.carp"},
+	"catfish":  {Burst: 1.33, Duration: 1.20, Rest: 1.18, BurstFatigue: 2.5, Stamina: 1.65, RestPower: 0.60, CurvePool: "e.chub"},
+	"sturgeon": {Burst: 1.21, Duration: 1.42, Rest: 1.22, BurstFatigue: 2.5, Stamina: 1.75, RestPower: 0.62, CurvePool: "e.chub"},
+	"small":    {Burst: 0.96, Duration: 0.62, Rest: 0.58, BurstFatigue: 2.5, Stamina: 0.72, RestPower: 0.45, CurvePool: "c.roach"},
+	"marine":   {Burst: 1.10, Duration: 1.02, Rest: 0.90, BurstFatigue: 2.5, Stamina: 1.18, RestPower: 0.52, CurvePool: "perch"},
+	"eel":      {Burst: 1.16, Duration: 0.78, Rest: 0.68, BurstFatigue: 2.5, Stamina: 0.92, RestPower: 0.46, CurvePool: "a.sleeper"},
+	"apex":     {Burst: 1.42, Duration: 1.05, Rest: 1.05, BurstFatigue: 2.5, Stamina: 1.55, RestPower: 0.56, CurvePool: "e.chub"},
 }
 
 func fishFightArchetypeFor(species string) fishFightArchetype {
@@ -106,11 +108,12 @@ func (s *Server) fishFightProfileFor(f *RolledFish) fishFightProfile {
 	ratio = math.Max(0.03, math.Min(1.0, ratio))
 	root := math.Sqrt(ratio)
 	return fishFightProfile{
-		ForceScale:    arch.Burst * (0.84 + 0.28*root),
-		DurationScale: arch.Duration * (0.72 + 0.58*ratio),
-		RestScale:     arch.Rest * (0.82 + 0.30*root),
-		StaminaScale:  arch.Stamina * (0.66 + 0.58*root),
-		SizeRatio:     ratio,
+		ForceScale:         arch.Burst * (0.84 + 0.28*root),
+		DurationScale:      arch.Duration * (0.72 + 0.58*ratio),
+		RestScale:          arch.Rest * (0.82 + 0.30*root),
+		BurstDurationScale: 1 / arch.BurstFatigue,
+		StaminaScale:       arch.Stamina * (0.66 + 0.58*root),
+		SizeRatio:          ratio,
 	}
 }
 
@@ -160,4 +163,15 @@ func fightPhaseDurationScale(stage uint32) float64 {
 
 func fightIsRestPhase(stage uint32) bool {
 	return stage == 104 || stage == 105 || stage == 306
+}
+
+// fightIsBurstPhase 标记曲线中高张力的冲刺阶段。客户端按 27.f21 驱动搏鱼节奏，
+// 缩短这些阶段是服务端能可靠表达的“冲刺更快耗尽体力/转入恢复”。
+func fightIsBurstPhase(stage uint32) bool {
+	switch stage {
+	case 300, 301, 302, 101, 102, 103:
+		return true
+	default:
+		return false
+	}
 }

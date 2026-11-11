@@ -34,7 +34,11 @@ const (
 	// 就不再补记，宁可少烧一点摩擦片，也不让一条迟到上报把整段发热曲线一次烧完。
 	defaultReelLoadMaxTickSeconds = 5.0
 	// defaultReelBurnBaseSeconds 是校准点摩擦片连续锁轮的烧穿秒数（tunable reel_locked_burn_base_s）。
-	defaultReelBurnBaseSeconds = 10.0
+	// 默认给约半分钟操作窗口；持续硬锁大鱼仍会烧穿。
+	defaultReelBurnBaseSeconds = 30.0
+	// defaultReelLockedBurnGraceRatio 是锁轮开始烧蚀前的拉力容错。
+	// 在锁轮承力的 110% 内只亮警告、不消耗摩擦片，避免短暂顶红直接烧轮。
+	defaultReelLockedBurnGraceRatio = 1.10
 	// defaultReelBurnCurve 是锁轮过载的发热曲线指数（tunable reel_locked_burn_curve）：
 	// 前 10% 时间只掉 3%，最后 10% 时间掉 15%。
 	defaultReelBurnCurve = 1.5
@@ -327,6 +331,14 @@ func (s *Server) reelBurnCalibrationDrag() float64 {
 	return v
 }
 
+func (s *Server) reelLockedBurnGraceRatio() float64 {
+	v := s.tunableF("reel_locked_burn_grace_ratio", defaultReelLockedBurnGraceRatio)
+	if v < 1 || v > 1.5 || math.IsNaN(v) || math.IsInf(v, 0) {
+		return defaultReelLockedBurnGraceRatio
+	}
+	return v
+}
+
 // reelBurnSecondsFor 给出当前承力状态下的锁轮烧穿时长 T：片子越弱、油越差、
 // 鱼越猛，T 越短。强度系数按摩擦片额定线性铺开（顶级约为校准点 5.3 倍）。
 // 返回 0 表示算不出来，本条不按曲线烧。
@@ -346,7 +358,12 @@ func (s *Server) reelBurnSecondsFor(w fightReelWear) float64 {
 	if oil <= 0 {
 		oil = 1
 	}
-	overload := math.Max(0.35, math.Min(3.0, w.pullKg/w.lockedKg-1+0.35))
+	ratio := w.pullKg / w.lockedKg
+	grace := s.reelLockedBurnGraceRatio()
+	if ratio <= grace {
+		return 0
+	}
+	overload := math.Max(0.35, math.Min(3.0, ratio-grace+0.35))
 	T := base * strength * oil / overload
 	if T <= 0 || T > 600 {
 		return 0
@@ -365,7 +382,7 @@ func (s *Server) fightReelTickWear(w fightReelWear, tick float64) (ticks int, sl
 		return 0, 0, 0, 0, 0
 	}
 	if w.locked {
-		if w.lockedKg <= 0 || w.pullKg <= w.lockedKg+1e-9 {
+		if w.lockedKg <= 0 || w.pullKg <= w.lockedKg*s.reelLockedBurnGraceRatio()+1e-9 {
 			return 0, 0, 0, 0, 0
 		}
 		segSecs = w.SegSecs

@@ -99,11 +99,15 @@ func TestFightReelSlipWearCurveByDragSetting(t *testing.T) {
 func TestFightReelLockedBurnCurveAndSegmentReset(t *testing.T) {
 	srv := &Server{}
 	tick := defaultReelLoadTickSeconds
-	// 锁轮且鱼力超过承力 1.5 倍：按发热曲线烧，校准片连续 T 秒刚好烧穿。
+	// 锁轮且鱼力超过承力 1.5 倍：越过 10% 容错后按发热曲线烧，校准片连续 T 秒刚好烧穿。
 	base := newFightWearForTest(7.7, 5, 7.7, 11.55, 1, 1, true)
 	T := srv.reelBurnSecondsFor(base)
-	if want := defaultReelBurnBaseSeconds / 0.85; math.Abs(T-want) > 1e-9 {
-		t.Fatalf("烧穿时长应为 %.2fs（过载系数 0.85），实得 %.2fs", want, T)
+	if want := defaultReelBurnBaseSeconds / 0.75; math.Abs(T-want) > 1e-9 {
+		t.Fatalf("烧穿时长应为 %.2fs（扣除 10%% 容错后的过载系数 0.75），实得 %.2fs", want, T)
+	}
+	withinGrace := newFightWearForTest(7.7, 5, 7.7, 8.47, 1, 1, true) // 1.10x
+	if _, _, burn, secs, _ := srv.fightReelTickWear(withinGrace, tick); burn != 0 || secs != 0 {
+		t.Fatalf("锁轮承力 110%% 内只应警告不烧蚀：burn=%v secs=%v", burn, secs)
 	}
 	continuous, continuousSeg := base, base.SegSecs
 	var continuousWear float64

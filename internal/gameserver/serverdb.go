@@ -137,6 +137,12 @@ func (s *Server) buildFightCurvesWithProfile(species string, pull float64, profi
 		durationScale := profile.DurationScale * phaseDuration
 		if fightIsRestPhase(stage) {
 			durationScale = profile.RestScale * phaseDuration
+		} else if fightIsBurstPhase(stage) {
+			burstDurationScale := profile.BurstDurationScale
+			if burstDurationScale <= 0 {
+				burstDurationScale = 1
+			}
+			durationScale *= burstDurationScale
 		}
 		for i := 1; i <= 14; i++ {
 			v := r[i]
